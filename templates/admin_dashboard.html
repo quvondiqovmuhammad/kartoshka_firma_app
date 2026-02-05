@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold m-0">👑 Admin-Panel</h2>
+    </div>
+
+    <div class="row g-2 mb-4">
+        <div class="col-12">
+            <a href="{% url 'menu_create' %}" class="btn btn-success w-100 py-3 shadow-sm fw-bold" style="border-radius: 15px;">
+                ➕ Neues Produkt hinzufügen
+            </a>
+        </div>
+        <div class="col-12">
+            <a href="{% url 'admin_lager' %}" class="btn btn-primary w-100 py-3 shadow-sm fw-bold text-white" style="border-radius: 15px; background: #0d6efd;">
+                📦 Lagerverwaltung
+            </a>
+        </div>
+        <div class="col-6">
+            <a href="{% url 'admin_orders' %}" class="btn btn-white border w-100 py-2 shadow-sm text-dark" style="border-radius: 15px; background: white;">
+                📋 Bestellungen
+            </a>
+        </div>
+        <div class="col-6">
+            <a href="{% url 'admin_users' %}" class="btn btn-white border w-100 py-2 shadow-sm text-dark" style="border-radius: 15px; background: white;">
+                👥 Benutzer
+            </a>
+        </div>
+    </div>
+
+    <h5 class="fw-bold mb-3">📋 Produktsorten</h5>
+
+    <div class="row g-3">
+        {% for item in menu_items %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="border-radius: 18px; overflow: hidden;">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="fw-bold mb-1 text-primary">{{ item.name }}</h6>
+                            <span class="badge rounded-pill bg-light text-dark border px-3">
+                                {{ item.produkt_type }}
+                            </span>
+                        </div>
+                        {% if item.verfügbar %}
+                            <span class="badge rounded-pill bg-success-subtle text-success border border-success px-3">Verfügbar</span>
+                        {% else %}
+                            <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger px-3">Inaktiv</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="bg-light p-2 rounded-3 mb-3 small text-secondary">
+                        {{ item.beschreibung|default:"Keine Beschreibung vorhanden." }}
+                    </div>
+
+                    <div class="d-grid">
+                        <a href="{% url 'menu_update' item.id %}" class="btn btn-outline-primary btn-sm py-2" style="border-radius: 10px;">
+                            ✏️ Bearbeiten
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+            <p>Keine Produkte vorhanden.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .btn:active {
+        transform: scale(0.97);
+    }
+    .card {
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    .badge {
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}

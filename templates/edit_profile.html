@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Profil bearbeiten | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+        
+        <div class="mb-3">
+            <a href="javascript:history.back()" class="text-decoration-none text-muted small">
+                ⬅️ Zurück
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0" style="border-radius: 20px;">
+            <div class="card-body p-4">
+                
+                <div class="text-center mb-4">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 70px; height: 70px; font-size: 30px;">
+                        👤
+                    </div>
+                    <h3 class="fw-bold mt-3">Profil bearbeiten</h3>
+                    <p class="text-muted small">Aktualisieren Sie Ihre Informationen</p>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success py-2 small border-0 shadow-sm mb-3" style="border-radius: 12px;">
+                            ✅ {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Vorname</label>
+                        <input type="text" name="first_name" class="form-control" 
+                               placeholder="Vorname" value="{{ user.first_name }}" required 
+                               style="border-radius: 12px; padding: 12px; font-size: 16px;">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Nachname</label>
+                        <input type="text" name="last_name" class="form-control" 
+                               placeholder="Nachname" value="{{ user.last_name }}" required 
+                               style="border-radius: 12px; padding: 12px; font-size: 16px;">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">E-Mail Adresse</label>
+                        <input type="email" name="email" class="form-control" 
+                               placeholder="Email" value="{{ user.email }}" required 
+                               style="border-radius: 12px; padding: 12px; font-size: 16px;">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary">Neues Passwort (optional)</label>
+                        <input type="password" name="password" class="form-control" 
+                               placeholder="Leer lassen, falls keine Änderung" 
+                               style="border-radius: 12px; padding: 12px; font-size: 16px;">
+                        <div class="form-text text-muted" style="font-size: 11px;">
+                            Lassen Sie dieses Feld leer, wenn Sie Ihr Passwort nicht ändern möchten.
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg shadow" 
+                                style="border-radius: 15px; font-weight: 600; background: #0d6efd;">
+                            💾 Änderungen speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #f0f2f5;
+    }
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 8px rgba(13, 110, 253, 0.1);
+    }
+</style>
+{% endblock %}

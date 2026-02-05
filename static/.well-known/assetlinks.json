@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "de.kartoffelfirma.app",
+    "sha256_cert_fingerprints": [
+      "AC:58:76:ED:53:00:16:5B:BC:36:FE:F6:AE:3E:B1:99:98:02:DA:8B:E0:9B:1A:0D:D1:E4:E7:55:08:B2:61:29"
+    ]
+  }
+}]

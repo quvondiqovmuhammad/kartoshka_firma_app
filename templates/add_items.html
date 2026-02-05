@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Bestellung aufgeben | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <div class="d-flex align-items-center mb-4">
+        <h2 class="fw-bold m-0" style="font-size: 1.5rem;">🧾 Bestellung aufgeben</h2>
+    </div>
+
+    <form method="post" id="orderForm">
+        {% csrf_token %}
+
+        <div class="row g-3">
+            {% for item in menu_items %}
+            <div class="col-12">
+                <div class="card border-0 shadow-sm item-card" id="card_{{ item.id }}" style="border-radius: 15px;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+
+                            <div class="d-flex align-items-center" style="flex: 1;">
+                                <div class="form-check m-0">
+                                    <input class="form-check-input custom-checkbox item-select"
+                                           type="checkbox" name="items" value="{{ item.id }}"
+                                           id="item_{{ item.id }}">
+                                </div>
+                                <label class="ms-3" for="item_{{ item.id }}" style="cursor: pointer;">
+                                    <div class="fw-bold text-dark">{{ item.name }}</div>
+                                    <div class="text-muted small">
+                                        Typ: {{ item.produkt_type }}
+                                        ({% if item.produkt_type == 'Roh' %}5kg{% else %}4kg{% endif %})
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div style="width: 120px;">
+                                <label class="small text-muted d-block text-center mb-1">Menge (kg)</label>
+                                <input type="number" name="quantity_{{ item.id }}"
+                                       id="qty_{{ item.id }}"
+                                       placeholder=" "
+                                       inputmode="numeric"
+                                       {% if item.produkt_type == 'Roh' %}step="5"{% else %}step="4"{% endif %}
+                                       class="form-control text-center quantity-input no-spin"
+                                       disabled
+                                       style="border-radius: 10px; border: 1px solid #dee2e6; font-weight: bold; opacity: 0.5;">
+                                <div class="text-center mt-1" id="info_{{ item.id }}" style="font-size: 10px; color: #6c757d; min-height: 15px;">
+                                    <span id="display_{{ item.id }}">0 Paket(e)</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="sticky-bottom bg-white p-3 mt-4 border-top shadow-lg" style="margin: 0 -12px; border-radius: 20px 20px 0 0;">
+            <div class="row g-2">
+                <div class="col-4">
+                    <a href="{% url 'customer_orders' %}" class="btn btn-light w-100 py-2 fw-bold" style="border-radius: 12px; color: #6c757d;">
+                        ⬅️ Zurück
+                    </a>
+                </div>
+                <div class="col-8">
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-sm" style="border-radius: 12px;">
+                        ✅ Jetzt bestellen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.item-select');
+
+        checkboxes.forEach(checkbox => {
+            const id = checkbox.value;
+            const input = document.getElementById('qty_' + id);
+            const displaySpan = document.getElementById('display_' + id);
+            const infoDiv = document.getElementById('info_' + id);
+            const step = parseInt(input.getAttribute('step'));
+
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    input.disabled = false;
+                    input.style.opacity = "1";
+                    input.value = "";
+                    updateCalculation(input, displaySpan, infoDiv, step);
+                } else {
+                    input.disabled = true;
+                    input.value = "";
+                    input.style.opacity = "0.5";
+                    displaySpan.innerText = "0 Paket(e)";
+                    infoDiv.style.color = "#6c757d";
+                    input.style.borderColor = "#dee2e6";
+                }
+            });
+
+            input.addEventListener('input', function() {
+                updateCalculation(this, displaySpan, infoDiv, step);
+            });
+        });
+
+        function updateCalculation(input, displaySpan, infoDiv, step) {
+            const val = parseInt(input.value) || 0;
+
+            if (!input.value || val === 0) {
+                displaySpan.innerText = "0 Paket(e)";
+                infoDiv.style.color = "#6c757d";
+                input.style.borderColor = "#dee2e6";
+                return;
+            }
+
+            if (val > 0 && val % step === 0) {
+                displaySpan.innerText = (val / step) + " Paket(e)";
+                infoDiv.style.color = "#198754";
+                input.style.borderColor = "#198754";
+            } else {
+                // XATO BO'LGANDA: Faqat nemischa matn, paketlar soni yashiriladi
+                displaySpan.innerText = "Ungültige Menge!";
+                infoDiv.style.color = "#dc3545";
+                input.style.borderColor = "#dc3545";
+            }
+        }
+
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            const checkedItems = document.querySelectorAll('.item-select:checked');
+            if (checkedItems.length === 0) {
+                e.preventDefault();
+                alert("Bitte wählen Sie mindestens ein Produkt aus.");
+                return;
+            }
+            let isValid = true;
+            checkedItems.forEach(cb => {
+                const input = document.getElementById('qty_' + cb.value);
+                const step = parseInt(input.getAttribute('step'));
+                const val = parseInt(input.value) || 0;
+                if (val <= 0 || val % step !== 0) isValid = false;
+            });
+            if (!isValid) {
+                e.preventDefault();
+                alert("Bitte korrigieren Sie die Mengen (muss durch 4 oder 5 teilbar sein).");
+            }
+        });
+    });
+</script>
+
+<style>
+    .no-spin::-webkit-inner-spin-button,
+    .no-spin::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .no-spin { -moz-appearance: textfield; }
+    .item-card { transition: transform 0.2s; }
+    .item-select:checked + label { font-weight: bold; }
+    .quantity-input:disabled { background-color: #f8f9fa; }
+    .custom-checkbox { width: 24px; height: 24px; border-radius: 6px; }
+</style>
+{% endblock %}

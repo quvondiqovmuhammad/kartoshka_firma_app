@@ -1,0 +1,9 @@
+{
+  "appId": "com.kartoshka.app",
+  "appName": "Kartoffel Koppold",
+  "webDir": "dist",
+  "server": {
+    "url": "https://700m007.pythonanywhere.com",
+    "allowNavigation": ["700m007.pythonanywhere.com"]
+  }
+}

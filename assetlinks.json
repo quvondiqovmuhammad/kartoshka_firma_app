@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.kartoshka.app",
+    "sha256_cert_fingerprints": ["C9:C2:79:DB:AB:6F:FE:FA:8F:40:39:5C:2A:52:F3:29:86:1A:64:74:C2:41:91:3D:A4:57:D7:1D:EA:05:20:E1"]
+  }
+}]

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Schicht-Historie | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="container mt-4 pb-5 px-3">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'worker_dashboard' %}" class="btn btn-light rounded-pill shadow-sm me-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+            ⬅️
+        </a>
+        <h3 class="fw-bold m-0">📜 Schicht-Historie</h3>
+    </div>
+
+    {% for data in shifts_data %}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header bg-white border-0 pt-3 px-4">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="badge bg-light text-dark border p-2 mb-1" style="border-radius: 10px;">
+                        📅 {{ data.shift.start_time|date:"d.m.Y" }}
+                    </span>
+                    <div class="small text-muted fw-bold">
+                        🕒 {{ data.shift.start_time|date:"H:i" }} - {{ data.shift.end_time|date:"H:i" }}
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="h5 fw-bold text-success d-block m-0">{{ data.shift.total_packages_done }} kg</span>
+                    <small class="text-muted" style="font-size: 10px;">GESAMTGEWICHT</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body px-4 pb-4">
+            <div class="p-3 bg-light" style="border-radius: 15px;">
+                <h6 class="fw-bold small text-uppercase text-muted mb-3" style="letter-spacing: 1px;">Produktionsdetails:</h6>
+                <div class="list-group list-group-flush bg-transparent">
+
+                    {% for item in data.summary %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-dashed">
+                        <div>
+                            <div class="d-flex align-items-center">
+                                <span class="text-dark fw-medium">{{ item.menu_item__name }}</span>
+
+                                {% if item.menu_item__produkt_type == 'Roh' %}
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 9px;">Roh</span>
+                                {% elif item.menu_item__produkt_type == 'Gar' %}
+                                    <span class="badge bg-info text-dark ms-1" style="font-size: 9px;">Gar</span>
+                                {% endif %}
+                            </div>
+
+                            {# Zakaz yoki Ombor ekanligini ajratish #}
+                            {% if item.order %}
+                                <small class="text-primary d-block" style="font-size: 10px; font-weight: 500;">
+                                    🛒 Kundenbestellung (Zakaz)
+                                </small>
+                            {% else %}
+                                <small class="text-success d-block" style="font-size: 10px; font-weight: 500;">
+                                    📦 Lager-Refill (Ombor)
+                                </small>
+                            {% endif %}
+                        </div>
+                        <span class="badge rounded-pill bg-white text-dark border shadow-sm px-3 py-2">
+                            <strong>{{ item.total_kg }}</strong> kg
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="text-muted small">Keine Details vorhanden.</div>
+                    {% endfor %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5 card border-0 shadow-sm" style="border-radius: 20px;">
+        <div class="display-1 text-muted opacity-25">📜</div>
+        <p class="text-muted mt-3">Keine Historie gefunden.</p>
+        <a href="{% url 'worker_dashboard' %}" class="btn btn-primary rounded-pill px-4 mt-2">Dashboard</a>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .border-dashed { border-bottom-style: dashed !important; border-bottom-color: #dee2e6 !important; }
+    .badge { font-weight: 600; }
+</style>
+{% endblock %}

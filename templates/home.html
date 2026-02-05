@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Startseite | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6 text-center">
+            
+            <div class="mb-4">
+                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 100px; height: 100px; font-size: 50px;">
+                    🥔
+                </div>
+            </div>
+
+            <h1 class="fw-bold mb-3" style="color: #2c3e50;">Kartoffelfirma</h1>
+            <p class="text-muted lead mb-5">Ihr zuverlässiges Management-System für Produktion und Logistik.</p>
+
+            {% if user.is_authenticated %}
+                <div class="card border-0 shadow-sm p-4" style="border-radius: 20px; background: #ffffff;">
+                    <h5 class="mb-3">Willkommen zurück! 👋</h5>
+                    <div class="mb-4">
+                        <small class="text-muted d-block mb-1">Angemeldet als:</small>
+                        <span class="badge bg-primary-subtle text-primary px-4 py-2 rounded-pill" style="font-size: 1rem; font-weight: 600;">
+                            {% if user.role == 'admin' %}Administrator{% elif user.role == 'worker' %}Produktion{% else %}Büro (Kunde){% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <a href="{% if user.role == 'admin' %}{% url 'admin_dashboard' %}
+                                 {% elif user.role == 'worker' %}{% url 'worker_dashboard' %}
+                                 {% elif user.role == 'customer' %}{% url 'customer_orders' %}
+                                 {% endif %}" class="btn btn-primary btn-lg shadow-sm py-3" style="border-radius: 15px; font-weight: 600;">
+                            🔍 Zum Dashboard gehen
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="row g-3">
+                    <div class="col-12">
+                        <p class="text-muted mb-4">Bitte melden Sie sich an, um auf das System zuzugreifen.</p>
+                    </div>
+                    <div class="col-12">
+                        <a href="{% url 'login_html' %}" class="btn btn-primary btn-lg w-100 shadow" style="border-radius: 15px; font-weight: 600; padding: 15px;">
+                            🔑 Anmelden
+                        </a>
+                    </div>
+                    <div class="col-12 text-center mt-3">
+                        <span class="text-muted small">Noch kein Konto?</span> 
+                        <a href="{% url 'signup_html' %}" class="text-decoration-none fw-bold ms-1 text-primary">Jetzt registrieren</a>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="mt-5 pt-4">
+                <div class="row g-2">
+                    <div class="col-4">
+                        <div class="p-2 border rounded-4 bg-white shadow-sm">
+                            <div class="fw-bold text-dark h6 mb-0">100%</div>
+                            <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Präzision</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 border rounded-4 bg-white shadow-sm">
+                            <div class="fw-bold text-dark h6 mb-0">Aktiv</div>
+                            <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Produktion</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 border rounded-4 bg-white shadow-sm">
+                            <div class="fw-bold text-dark h6 mb-0">Sicher</div>
+                            <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Daten</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #f8f9fa;
+        min-height: 100vh;
+    }
+    .bg-primary-subtle { background-color: #e7f1ff !important; }
+    .btn:active { transform: scale(0.97); transition: 0.1s; }
+</style>
+{% endblock %}

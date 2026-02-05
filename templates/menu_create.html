@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Neues Produkt hinzufügen | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center pb-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+
+        <div class="mb-3">
+            <a href="{% url 'admin_dashboard' %}" class="text-decoration-none text-muted small">
+                ⬅️ Zurück zum Dashboard
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0" style="border-radius: 20px;">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <span style="font-size: 40px;">➕</span>
+                    <h3 class="fw-bold mt-2">Neues Produkt</h3>
+                    <p class="text-muted small">Erstellen Sie einen neuen Menüartikel</p>
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger p-2 small">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Produktname</label>
+                        <input type="text" name="{{ form.name.name }}"
+                               class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                               placeholder="z.B. Kartoffeln Premium"
+                               value="{{ form.name.value|default:'' }}" required
+                               style="border-radius: 12px; padding: 12px; font-size: 16px;">
+                        {% for error in form.name.errors %}
+                            <div class="invalid-feedback small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Produkt-Typ</label>
+                        <select name="{{ form.produkt_type.name }}"
+                                class="form-select {% if form.produkt_type.errors %}is-invalid{% endif %}"
+                                required style="border-radius: 12px; padding: 12px; font-size: 16px;">
+                            {% for choice in form.produkt_type.field.choices %}
+                                <option value="{{ choice.0 }}" {% if form.produkt_type.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                            {% endfor %}
+                        </select>
+                        {% for error in form.produkt_type.errors %}
+                            <div class="invalid-feedback small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Beschreibung</label>
+                        <textarea name="{{ form.beschreibung.name }}"
+                                  class="form-control {% if form.beschreibung.errors %}is-invalid{% endif %}"
+                                  rows="3" placeholder="Details zum Produkt..."
+                                  style="border-radius: 12px; padding: 12px; font-size: 16px;">{{ form.beschreibung.value|default:'' }}</textarea>
+                        {% for error in form.beschreibung.errors %}
+                            <div class="invalid-feedback small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-4 d-flex align-items-center justify-content-between p-3 bg-light rounded-4">
+                        <span class="fw-bold small text-secondary">Verfügbarkeit (Mavjudlik)</span>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox"
+                                   name="{{ form.verfügbar.name }}" id="id_verfügbar"
+                                   {% if form.verfügbar.value %}checked{% endif %}
+                                   style="width: 45px; height: 22px;">
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg shadow-sm" style="border-radius: 15px; font-weight: 600;">
+                            ✅ Produkt speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f4f7f6; }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+    }
+</style>
+{% endblock %}

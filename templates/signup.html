@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Registrieren | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0" style="border-radius: 20px; background: #ffffff;">
+            <div class="card-body p-4">
+                
+                <div class="text-center mb-4">
+                    <span style="font-size: 40px;">📝</span>
+                    <h3 class="fw-bold mt-2">Konto erstellen</h3>
+                    <p class="text-muted small">Kartoffelfirma Management</p>
+                </div>
+
+                {% if error %}
+                    <div class="alert alert-danger py-2 small text-center" style="border-radius: 10px;">
+                        {% if "allaqachon mavjud" in error or "existiert bereits" in error %}
+                            Benutzername existiert bereits.
+                        {% elif "allaqachon ishlatilgan" in error or "bereits verwendet" in error %}
+                            Diese E-Mail wird bereits verwendet.
+                        {% else %}
+                            {{ error }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">Benutzername</label>
+                        <input type="text" name="username" class="form-control" placeholder="Benutzername" required style="border-radius: 10px; font-size: 16px;">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">Passwort</label>
+                        <input type="password" name="password" class="form-control" placeholder="Passwort" required style="border-radius: 10px; font-size: 16px;">
+                    </div>
+
+                    <div class="row gx-2">
+                        <div class="col-6 mb-2">
+                            <label class="form-label small fw-bold text-secondary">Vorname</label>
+                            <input type="text" name="first_name" class="form-control" placeholder="Vorname" required style="border-radius: 10px; font-size: 16px;">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small fw-bold text-secondary">Nachname</label>
+                            <input type="text" name="last_name" class="form-control" placeholder="Nachname" required style="border-radius: 10px; font-size: 16px;">
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="Email" required style="border-radius: 10px; font-size: 16px;">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary">Abteilung / Rolle</label>
+                        <select name="role" class="form-select shadow-sm" required style="border-radius: 10px; font-size: 16px; background-color: #fcfcfc;">
+                            <option value="customer">Büro (Kunde)</option>
+                            <option value="worker">Produktion (Arbeiter)</option>
+                            {% if not admin_limit_reached %}
+                                <option value="admin">Admin</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <button class="btn btn-success btn-lg w-100 shadow-sm" type="submit" style="border-radius: 12px; font-weight: 600;">
+                        Registrieren
+                    </button>
+                </form>
+
+                <div class="mt-4 text-center border-top pt-3">
+                    <p class="text-muted small">Haben Sie bereits ein Konto?</p>
+                    <a href="{% url 'login_html' %}" class="btn btn-outline-primary btn-sm w-100" style="border-radius: 10px;">
+                        🔑 Jetzt anmelden
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Inputlar dizayni */
+    .form-control, .form-select {
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+    }
+    .form-control:focus {
+        background-color: #fff;
+        box-shadow: 0 0 8px rgba(25, 135, 84, 0.1);
+        border-color: #198754;
+    }
+</style>
+{% endblock %}

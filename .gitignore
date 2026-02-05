@@ -1,0 +1,18 @@
+# Virtual muhit
+.venv/
+venv/
+ENV/
+
+# Python kesh fayllari
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ma'lumotlar bazasi (Lokal bazani GitHubga yuklamaymiz)
+db.sqlite3
+
+# Statik fayllar to'plami
+staticfiles/
+
+# Muhit o'zgaruvchilari (parollar va maxfiy kalitlar)
+.env
