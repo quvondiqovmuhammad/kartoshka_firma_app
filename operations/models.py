@@ -22,6 +22,9 @@ class MenuItem(models.Model):
     beschreibung = models.TextField(blank=True, null=True)
     verfügbar = models.BooleanField(default=True)
 
+    class Meta:
+        unique_together = ('name', 'produkt_type')
+
     def __str__(self): return f"{self.name} ({self.produkt_type})"
 
 
@@ -29,10 +32,10 @@ class MenuItem(models.Model):
 class Lager(models.Model):
     menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name='stock')
     current_stock = models.FloatField(default=0, verbose_name="Aktueller Lagerbestand (kg)")
-    target_amount = models.FloatField(default=0, verbose_name="Soll-Bestand (kg)")
 
     def __str__(self):
-        return f"Lager: {self.menu_item.name} | {self.current_stock}/{self.target_amount} kg"
+        return f"{self.menu_item.name}: {self.current_stock} kg"
+
 
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -74,10 +77,16 @@ class Shift(models.Model):
     def __str__(self):
         return f"{self.worker.username} - {self.start_time.strftime('%d.%m %H:%M')}"
 
+
+
 class ShiftReport(models.Model):
     shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name='reports')
-    product_name = models.CharField(max_length=255)
-    quantity = models.PositiveIntegerField()
+    product_name = models.CharField(max_length=100)
+
+    product_type = models.CharField(max_length=20, default='Roh')
+
+    quantity = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.product_name}: {self.quantity}"
+        return f"{self.product_name} ({self.product_type}) - {self.quantity}kg"

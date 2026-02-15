@@ -5,69 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ac9f4627-37a1-4c8e-a521-1b0b3d352a9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/templates/admin_lager.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/lager_refill.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Kartoshka_firma.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Kartoshka_firma.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deviceManager.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Pipfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Pipfile.lock" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.idea/AndroidProjectSystem.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/.idea/AndroidProjectSystem.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.idea/deploymentTargetSelector.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/.idea/deploymentTargetSelector.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.idea/migrations.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/.idea/migrations.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/.idea/runConfigurations.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/.idea/runConfigurations.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assetlinks.json" beforeDir="false" afterPath="$PROJECT_DIR$/assetlinks.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/kartoshka_firma/asgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/kartoshka_firma/asgi.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kartoshka_firma/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/kartoshka_firma/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kartoshka_firma/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/kartoshka_firma/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/kartoshka_firma/wsgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/kartoshka_firma/wsgi.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/manage.py" beforeDir="false" afterPath="$PROJECT_DIR$/manage.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/operations/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/apps.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0002_menuitem.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0003_order_orderitem.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0004_alter_customuser_email.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0005_orderitem_status.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0006_remove_menuitem_price_menuitem_potato_type_and_more.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0007_remove_menuitem_quantity_alter_menuitem_potato_type.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0008_alter_orderitem_status.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0009_rename_description_menuitem_beschreibung_and_more.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0010_rename_potato_type_menuitem_produkt_type.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/migrations/0011_customuser_is_approved.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/mixins.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/mixins.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/operations/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/tests.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/operations/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/operations/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/operations/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/.well-known/assetlinks.json" beforeDir="false" afterPath="$PROJECT_DIR$/static/.well-known/assetlinks.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/add_items.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/add_items.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/admin_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin_dashboard.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/admin_lager.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin_lager.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/admin_orders.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin_orders.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/admin_users.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin_users.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/customer_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/customer_dashboard.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/customer_orders.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/customer_orders.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/edit_profile.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/edit_profile.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/lager_refill.html" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/menu_create.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/menu_create.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/menu_update.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/menu_update.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/shift_history.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/shift_history.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/signup.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/signup.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/worker_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/worker_dashboard.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -93,15 +43,16 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>

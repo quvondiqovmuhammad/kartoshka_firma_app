@@ -19,11 +19,11 @@
                         📅 {{ data.shift.start_time|date:"d.m.Y" }}
                     </span>
                     <div class="small text-muted fw-bold">
-                        🕒 {{ data.shift.start_time|date:"H:i" }} - {{ data.shift.end_time|date:"H:i" }}
+                        🕒 {{ data.shift.start_time|date:"H:i" }} - {{ data.shift.end_time|date:"H:i" }} Uhr
                     </div>
                 </div>
                 <div class="text-end">
-                    <span class="h5 fw-bold text-success d-block m-0">{{ data.shift.total_packages_done }} kg</span>
+                    <span class="h5 fw-bold text-success d-block m-0">{{ data.shift.total_packages_done|floatformat:0 }} kg</span>
                     <small class="text-muted" style="font-size: 10px;">GESAMTGEWICHT</small>
                 </div>
             </div>
@@ -38,32 +38,23 @@
                     <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-dashed">
                         <div>
                             <div class="d-flex align-items-center">
-                                <span class="text-dark fw-medium">{{ item.menu_item__name }}</span>
+                                <span class="text-dark fw-medium">{{ item.product_name }}</span>
 
-                                {% if item.menu_item__produkt_type == 'Roh' %}
-                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 9px;">Roh</span>
-                                {% elif item.menu_item__produkt_type == 'Gar' %}
-                                    <span class="badge bg-info text-dark ms-1" style="font-size: 9px;">Gar</span>
+                                {% if item.product_type == 'Roh' %}
+                                    <span class="badge bg-primary text-white ms-1" style="font-size: 9px;">Roh</span>
+                                {% elif item.product_type == 'Gar' %}
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 9px;">Gar</span>
                                 {% endif %}
                             </div>
 
-                            {# Zakaz yoki Ombor ekanligini ajratish #}
-                            {% if item.order %}
-                                <small class="text-primary d-block" style="font-size: 10px; font-weight: 500;">
-                                    🛒 Kundenbestellung (Zakaz)
-                                </small>
-                            {% else %}
-                                <small class="text-success d-block" style="font-size: 10px; font-weight: 500;">
-                                    📦 Lager-Refill (Ombor)
-                                </small>
-                            {% endif %}
                         </div>
+
                         <span class="badge rounded-pill bg-white text-dark border shadow-sm px-3 py-2">
-                            <strong>{{ item.total_kg }}</strong> kg
+                            <strong>{{ item.total_kg|floatformat:0 }}</strong> kg
                         </span>
                     </div>
                     {% empty %}
-                    <div class="text-muted small">Keine Details vorhanden.</div>
+                    <div class="text-muted small">Keine Details für diese Schicht.</div>
                     {% endfor %}
 
                 </div>
@@ -74,7 +65,7 @@
     <div class="text-center py-5 card border-0 shadow-sm" style="border-radius: 20px;">
         <div class="display-1 text-muted opacity-25">📜</div>
         <p class="text-muted mt-3">Keine Historie gefunden.</p>
-        <a href="{% url 'worker_dashboard' %}" class="btn btn-primary rounded-pill px-4 mt-2">Dashboard</a>
+        <a href="{% url 'worker_dashboard' %}" class="btn btn-primary rounded-pill px-4 mt-2">Zum Dashboard</a>
     </div>
     {% endfor %}
 </div>
@@ -82,5 +73,6 @@
 <style>
     .border-dashed { border-bottom-style: dashed !important; border-bottom-color: #dee2e6 !important; }
     .badge { font-weight: 600; }
+    body { background-color: #f8f9fa; }
 </style>
 {% endblock %}

@@ -1,4 +1,3 @@
-from django.db import transaction
 from django.urls import reverse_lazy
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -15,15 +14,17 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db.models import Sum, Count
 from django.views.generic import TemplateView, CreateView, UpdateView
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from .utils import auto_complete_order_if_no_pending
 from django.http import HttpResponseForbidden
 from django.http import JsonResponse
-from django.db import transaction
-from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib import messages
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_POST
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db import transaction
+
 
 
 
@@ -202,7 +203,6 @@ class EditProfileView(View):
             user.set_password(password)  # faqat parol bo‘lsa yangilanadi
 
         user.save()
-        messages.success(request, '✅ Profil ma’lumotlari yangilandi.')
         return redirect('edit_profile')
 
 
@@ -377,180 +377,139 @@ class MenuUpdateView(LoginRequiredMixin, UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
 
-# views.py
-class LagerRefillView(RoleRequiredMixin, TemplateView):
-    template_name = 'lager_refill.html'
-    allowed_roles = ['worker', 'admin']
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        from django.db.models import F
-
-        # 'shortage_kg' nomini annotatsiyada ishlatamiz
-        refill_items = Lager.objects.select_related('menu_item').annotate(
-            shortage_kg=F('target_amount') - F('current_stock')
-        ).order_by('-shortage_kg')
-
-        context['refill_data'] = refill_items
-        # Smena holatini tekshirish
-        context['active_shift'] = Shift.objects.filter(worker=self.request.user, is_active=True).last()
-        return context
-
-
 @login_required
-@transaction.atomic
-def refill_lager(request, pk):
-    active_shift = Shift.objects.filter(worker=request.user, is_active=True).last()
+@require_POST  # Faqat POST so'rov bilan o'chiriladi (xavfsizlik uchun)
+def delete_menu_item(request, pk):
+    if request.user.role != 'admin':
+        return redirect('home')
 
-    if not active_shift:
-        messages.error(request, "⚠️ Iltimos, avval smenani boshlang!")
-        return redirect('lager_refill_page')
+    menu_item = get_object_or_404(MenuItem, pk=pk)
 
-    if request.method == 'POST':
-        lager = get_object_or_404(Lager, menu_item_id=pk)
-        try:
-            input_amount = float(request.POST.get('num_packages', 0))
-            p_type = lager.menu_item.produkt_type  # Mahsulot turi (Roh yoki Gar)
+    # O'chirish
+    menu_item.delete()
 
-            # 1. KARRALILIK TEKSHIRUVI (Modelga tegmasdan)
-            if p_type == 'Roh' and input_amount % 5 != 0:
-                messages.error(request, f"🛑 {lager.menu_item.name} (Roh) faqat 5 kg lik qadoqlarda bo'lishi shart!")
-                return redirect('lager_refill_page')
+    messages.success(request, f"✅ {menu_item.name} muvaffaqiyatli o'chirildi.")
+    return redirect('admin_dashboard')
 
-            if p_type == 'Gar' and input_amount % 4 != 0:
-                messages.error(request, f"🛑 {lager.menu_item.name} (Gar) faqat 4 kg lik qadoqlarda bo'lishi shart!")
-                return redirect('lager_refill_page')
-
-            # 2. REJA LIMITI TEKSHIRUVI
-            max_allowed = lager.target_amount - lager.current_stock
-            if max_allowed <= 0:
-                messages.error(request, "🛑 Reja allaqachon to'lgan!")
-                return redirect('lager_refill_page')
-
-            if input_amount > max_allowed:
-                messages.error(request, f"🛑 Limitdan oshdi! Maksimal {max_allowed} kg qo'sha olasiz.")
-                return redirect('lager_refill_page')
-
-            # 3. SAQLASH
-            if input_amount > 0:
-                lager.current_stock += input_amount
-                lager.save()
-
-                OrderItem.objects.create(
-                    order=None,
-                    menu_item=lager.menu_item,
-                    quantity=input_amount,
-                    status='completed',
-                    shift=active_shift
-                )
-                messages.success(request, f"✅ {lager.menu_item.name} omborga qo'shildi.")
-        except ValueError:
-            messages.error(request, "⚠️ Miqdor xato kiritildi.")
-
-    return redirect('lager_refill_page')
-
-
-from django.db.models import Sum, Q
 
 class WorkerDashboardView(RoleRequiredMixin, TemplateView):
     template_name = 'worker_dashboard.html'
-    allowed_roles = ['worker', 'admin', 'buro'] # Admin/Buro ham ko'ra olishi uchun
+    allowed_roles = ['worker', 'admin', 'buro']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        # 1. Aktiv smenani olamiz
         active_shift = Shift.objects.filter(worker=self.request.user, is_active=True).last()
         context['active_shift'] = active_shift
 
-        # 1. Barcha kerakli ma'lumotlarni bitta so'rovda yig'amiz
-        # Smenadagi natijalarni faqat smena bo'lsagina hisoblaymiz
-        shift_filter = Q(orderitem__shift=active_shift, orderitem__status='completed') if active_shift else Q(pk__in=[])
+        # 2. Barcha mahsulotlar (Ombor holati bilan)
+        products = MenuItem.objects.filter(verfügbar=True).select_related('stock').order_by('name')
 
-        products_query = MenuItem.objects.filter(
-            orderitem__status='pending'
-        ).annotate(
-            total_wartend=Sum('orderitem__quantity', filter=Q(orderitem__status='pending')),
-            completed_session_kg=Sum('orderitem__quantity', filter=shift_filter)
-        ).select_related('stock').distinct().order_by('-total_wartend')
+        data = []
+        for item in products:
+            produced_sum = 0
 
-        all_products = []
-        for item in products_query:
-            all_products.append({
+            if active_shift:
+                # ---------------------------------------------------------
+                # ✅ TO'G'IRLANGAN QISM:
+                # Endi biz NOMI va TURI bo'yicha aniq filtrlaymiz.
+                # Shunda "Ganze 1/1 (Roh)" va "Ganze 1/1 (Gar)" alohida hisoblanadi.
+                # ---------------------------------------------------------
+                produced_sum = ShiftReport.objects.filter(
+                    shift=active_shift,
+                    product_name=item.name,  # Masalan: "Ganze 1/1"
+                    product_type=item.produkt_type  # Masalan: "Roh" yoki "Gar"
+                ).aggregate(total=Sum('quantity'))['total'] or 0
+
+            # Ombordagi holat
+            stock_kg = 0
+            if hasattr(item, 'stock'):
+                stock_kg = item.stock.current_stock
+
+            data.append({
                 'id': item.id,
                 'name': item.name,
                 'produkt_type': item.produkt_type,
-                # Roh bo'lsa 5, aks holda 4 kg qadoq
                 'pkg_size': 5 if item.produkt_type == 'Roh' else 4,
-                'order_pending': item.total_wartend or 0,
-                'completed_session_kg': item.completed_session_kg or 0,
-                'current_stock': item.stock.current_stock if hasattr(item, 'stock') else 0,
+                'produziert_kg': produced_sum,
+                'lager_kg': stock_kg
             })
 
-        context['product_data'] = all_products
+        context['product_data'] = data
         return context
 
 
 @login_required
 @transaction.atomic
-def complete_product_view(request, menu_item_id):
-    active_shift = Shift.objects.filter(worker=request.user, is_active=True).last()
-
-    # 1. Smena nazorati
-    if not active_shift:
-        messages.error(request, "⚠️ Bitte starten Sie zuerst eine Schicht!")
-        return redirect('worker_dashboard')
-
+def worker_produce(request):
     if request.method == 'POST':
-        # 2. Miqdorni olish
-        num_packages = request.POST.get('num_packages')
-        try:
-            kg_produced = int(float(num_packages)) if num_packages else 0
-        except (ValueError, TypeError):
-            kg_produced = 0
-
-        if kg_produced <= 0:
+        active_shift = Shift.objects.filter(worker=request.user, is_active=True).last()
+        if not active_shift:
+            messages.error(request, "⚠️ Bitte Schicht starten!")
             return redirect('worker_dashboard')
 
-        menu_item = get_object_or_404(MenuItem, id=menu_item_id)
+        item_id = request.POST.get('menu_item_id')
+        try:
+            quantity = float(request.POST.get('quantity', 0))
+        except (ValueError, TypeError):
+            return redirect('worker_dashboard')
 
-        # 3. Faqat pending (kutilayotgan) zakazlarni yopish mantiqi (FIFO)
+        if quantity <= 0:
+            return redirect('worker_dashboard')
+
+        menu_item = get_object_or_404(MenuItem, id=item_id)
+
+        # 1. Tarixga yozish
+        ShiftReport.objects.create(
+            shift=active_shift,
+            product_name=menu_item.name,
+            product_type=menu_item.produkt_type,
+            quantity=quantity
+        )
+        active_shift.total_packages_done += quantity
+        active_shift.save()
+
+        # 2. Qisman yopish mantig'i
         pending_items = OrderItem.objects.filter(
             menu_item=menu_item,
             status='pending'
         ).order_by('order__created_at')
 
-        remaining_kg = kg_produced
+        remaining_produced = quantity
 
         for item in pending_items:
-            if remaining_kg <= 0:
+            if remaining_produced <= 0:
                 break
 
-            if remaining_kg >= item.quantity:
+            if remaining_produced >= item.quantity:
                 # Zakaz to'liq yopiladi
-                remaining_kg -= item.quantity
+                remaining_produced -= item.quantity
                 item.status = 'completed'
-                item.shift = active_shift
                 item.save()
-
-                # Buyurtma statusini tekshiramiz
                 auto_complete_order_if_no_pending(item.order)
             else:
-                # Zakaz qisman yopiladi: bajarilgan qismi uchun yangi qator
+                # ZAKAZNI BO'LISH (Qisman yopish)
+                # 1. Yangi completed qator yaratamiz
                 OrderItem.objects.create(
                     order=item.order,
                     menu_item=menu_item,
-                    quantity=remaining_kg,
-                    status='completed',
-                    shift=active_shift
+                    quantity=remaining_produced,
+                    status='completed'
                 )
-                # Qolgan qismi pending bo'lib turaveradi
-                item.quantity -= remaining_kg
+                # 2. Eskisini kamaytiramiz (u pending bo'lib qolaveradi)
+                item.quantity -= remaining_produced
                 item.save()
 
-                # Bu yerda status hali pendingligicha qoladi,
-                # chunki item.quantity hali bor.
-                remaining_kg = 0
+                remaining_produced = 0
+                break  # Hamma narsa tarqatildi
 
-        messages.success(request, f"✅ {kg_produced} kg mahsulot zakazlar uchun qayd etildi.")
+        # 3. Ortib qolgani omborga
+        if remaining_produced > 0:
+            lager, created = Lager.objects.get_or_create(menu_item=menu_item)
+            lager.current_stock += remaining_produced
+            lager.save()
+
 
     return redirect('worker_dashboard')
 
@@ -565,31 +524,17 @@ def cancel_order_item(request, item_id):
         item.status = 'cancelled'
         item.save()
 
-        # Buyurtmada bekor qilinmagan mahsulotlar borligini tekshiramiz
         remaining_items = order.orderitem_set.exclude(status='cancelled').exists()
 
         if not remaining_items:
-            # Agar barcha mahsulotlar bekor qilingan bo'lsa, buyurtmani o'chiramiz
             order.delete()
-            messages.info(request, "Die leere Bestellung wurde gelöscht.")
-            # MANA BU YER: 'worker_dashboard' o'rniga 'customer_orders'
             return redirect('customer_orders')
         else:
             # Qolgan mahsulotlar bo'lsa, buyurtma statusini avtomatik yangilaymiz
             auto_complete_order_if_no_pending(order)
 
-    messages.success(request, f"{item.menu_item.name} wurde storniert.")
-    # Har qanday holatda ham buyurtmalar sahifasida qolamiz
     return redirect('customer_orders')
 
-@csrf_exempt
-@login_required
-def reset_all_completed(request):
-    if request.method == 'POST':
-        keys_to_delete = [key for key in request.session.keys() if key.startswith("completed_")]
-        for key in keys_to_delete:
-            del request.session[key]
-    return redirect('worker_dashboard')
 
 
 class CustomerDashboardView(RoleRequiredMixin, TemplateView):
@@ -699,7 +644,6 @@ class AddItemsToOrderView(LoginRequiredMixin, View):
                 return redirect('customer_orders')
             else:
                 order.delete()
-                messages.error(request, "Keine gültigen Mengen eingegeben.")
                 return redirect('customer_dashboard')
 
 class CustomerOrdersView(LoginRequiredMixin, View):
@@ -721,52 +665,22 @@ def start_shift(request):
     if request.method == 'POST':
         # Yangi smena ochish
         Shift.objects.create(worker=request.user)
-        messages.success(request, "Schicht gestartet! Viel Erfolg.")
     return redirect('worker_dashboard')
 
 def end_shift(request):
     if request.method == 'POST':
         shift = Shift.objects.filter(worker=request.user, is_active=True).last()
         if shift:
-            total_done_kg = 0
-
-            # 1. Shu smenada yopilgan barcha mahsulot turlarini aniqlaymiz
-            # OrderItem dagi shift maydoni orqali bazadan filtrlaymiz
-            produced_items = OrderItem.objects.filter(shift=shift, status='completed')
-
-            # Mahsulotlar bo'yicha guruhlab hisoblaymiz
-            distinct_products = produced_items.values('menu_item__name').annotate(total_kg=Sum('quantity'))
-
-            for entry in distinct_products:
-                name = entry['menu_item__name']
-                kg = entry['total_kg']
-
-                # TARIXGA YOZISH (Database orqali)
-                ShiftReport.objects.create(
-                    shift=shift,
-                    product_name=name,
-                    quantity=kg  # Endi jami kg yoziladi
-                )
-                total_done_kg += kg
-
-            # 2. Smenani yopamiz
+            # Hisob-kitob qilish shart emas, worker_produce buni qilib bo'lgan.
+            # Faqat vaqtni belgilab yopamiz.
             shift.end_time = timezone.now()
-            shift.total_packages_done = total_done_kg  # Bu yerda kg saqlanadi
             shift.is_active = False
             shift.save()
-
-            # Sessionni tozalash (ehtiyot shart, agar eski qoldiqlari bo'lsa)
-            for key in list(request.session.keys()):
-                if key.startswith('completed_pkgs_'):
-                    del request.session[key]
-
-            messages.success(request, f"Schicht beendet. Gesamt: {total_done_kg} kg produziert.")
 
     return redirect('worker_dashboard')
 
 
 
-from django.db.models import Sum
 
 def shift_history_view(request):
     # Tugatilgan smenalarni olamiz
@@ -778,14 +692,13 @@ def shift_history_view(request):
     shifts_data = []
 
     for shift in shifts_query:
-        # 'order' maydonini guruhlashga qo'shamiz (order=None bo'lsa Ombor, aks holda Zakaz)
-        summary = shift.produced_items.filter(status='completed').values(
-            'menu_item__name',
-            'menu_item__produkt_type',
-            'order'  # <-- BU MUHIM: Zakaz yoki Omborni ajratish uchun
-        ).annotate(
+        # YANGI: ShiftReport modelidan ma'lumot olamiz
+        # 'reports' bu related_name (models.py da ShiftReport da yozilgan bo'lishi kerak)
+        # Agar related_name yozilmagan bo'lsa: ShiftReport.objects.filter(shift=shift)...
+
+        summary = ShiftReport.objects.filter(shift=shift).values('product_name').annotate(
             total_kg=Sum('quantity')
-        ).order_by('menu_item__name', 'order')
+        ).order_by('product_name')
 
         shifts_data.append({
             'shift': shift,
@@ -793,7 +706,6 @@ def shift_history_view(request):
         })
 
     return render(request, 'shift_history.html', {'shifts_data': shifts_data})
-
 
 @login_required
 def lager_view(request):
@@ -806,46 +718,6 @@ def lager_view(request):
     return render(request, 'admin_lager.html', {'items': items})
 
 
-@login_required
-@user_passes_test(lambda u: u.is_staff)
-def update_target(request, pk):
-    if request.method == 'POST':
-        menu_item = get_object_or_404(MenuItem, pk=pk)
-        lager, created = Lager.objects.get_or_create(menu_item=menu_item)
-
-        new_target_raw = request.POST.get('target_amount')
-        if new_target_raw:
-            try:
-                new_target = float(new_target_raw)
-                current_stock = lager.current_stock
-                p_type = menu_item.produkt_type
-
-                # 1. Qoldiqdan kamaytirmaslik tekshiruvi
-                if new_target < current_stock:
-                    messages.error(request,
-                                   f"🛑 Xato! Yangi reja hozirgi qoldiqdan ({current_stock:.0f} kg) kam bo'lishi mumkin emas.")
-                    return redirect('admin_lager')
-
-                # 2. Karralilik tekshiruvi
-                if p_type == 'Roh' and new_target % 5 != 0:
-                    messages.error(request, f"🛑 {menu_item.name} uchun reja 5 ga karrali bo'lishi shart.")
-                    return redirect('admin_lager')
-
-                if p_type == 'Gar' and new_target % 4 != 0:
-                    messages.error(request, f"🛑 {menu_item.name} uchun reja 4 ga karrali bo'lishi shart.")
-                    return redirect('admin_lager')
-
-                # Saqlash
-                lager.target_amount = new_target
-                lager.save()
-
-                # ✅ To'g'ri Python formati: {new_target:.0f}
-                messages.success(request, f"✅ {menu_item.name} Soll-Bestand wurde auf {new_target:.0f} kg aktualisiert.")
-
-            except ValueError:
-                messages.error(request, "⚠️ Raqam kiritishda xato.")
-
-    return redirect('admin_lager')
 
 
 def asset_links(request):

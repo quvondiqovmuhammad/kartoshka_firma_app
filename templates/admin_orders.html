@@ -1,79 +1,125 @@
 {% extends 'base.html' %}
-{% block title %}Alle Bestellungen | Kartoffelfirma{% endblock %}
+{% block title %}Bestellhistorie | Admin{% endblock %}
 
 {% block content %}
-<div class="container pb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold m-0" style="font-size: 1.5rem;">📦 Bestellungen</h2>
-        <span class="badge bg-primary rounded-pill">{{ orders|length }} Gesamt</span>
+<div class="container mt-4 pb-5">
+
+    <div class="mb-4">
+        <a href="{% url 'admin_dashboard' %}" class="text-decoration-none text-muted d-flex align-items-center gap-2" style="font-size: 1.1rem; font-weight: 500;">
+            <span style="font-size: 1.2rem;">⬅️</span> Zurück zum Dashboard
+        </a>
     </div>
 
-    {% if orders %}
+    <div class="d-flex align-items-center mb-4 ps-1">
+        <div class="bg-warning bg-opacity-10 rounded-4 d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+            <span style="font-size: 35px;">📋</span>
+        </div>
+        <div>
+            <h3 class="fw-bold m-0 text-dark">Bestellungen</h3>
+            <p class="text-muted small m-0">Barcha kelib tushgan buyurtmalar</p>
+        </div>
+    </div>
+
+    <div class="masonry-grid">
         {% for order in orders %}
-            <div class="card mb-3 border-0 shadow-sm" style="border-radius: 18px; overflow: hidden;">
-                <div class="card-header bg-white border-bottom-0 pt-3 px-3 d-flex justify-content-between align-items-start">
-                    <div>
-                        <span class="text-primary fw-bold small">ID #{{ order.id }}</span>
-                        <h6 class="mb-0 fw-bold text-dark">{{ order.created_at|date:"d.m.Y · H:i" }}</h6>
-                        <div class="text-muted" style="font-size: 12px;">👤 {{ order.user.get_full_name|default:order.user.username }}</div>
+        <div class="masonry-item">
+            <div class="card border-0 shadow-sm position-relative overflow-hidden mb-4" style="border-radius: 20px;">
+
+                <div class="position-absolute top-0 start-0 bottom-0" style="width: 6px;
+                    background-color: {% if order.status == 'completed' %}#198754{% elif order.status == 'pending' %}#ffc107{% else %}#dc3545{% endif %};">
+                </div>
+
+                <div class="card-body ps-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-light text-dark border fw-bold">#{{ order.id }}</span>
+                        <small class="text-muted">{{ order.created_at|date:"d.m.Y • H:i" }}</small>
                     </div>
-                    <div>
+
+                    <h5 class="fw-bold text-dark mb-1">
+                        {{ order.user.first_name }} {{ order.user.last_name }}
+                    </h5>
+                    <p class="text-muted small mb-3">👤 {{ order.user.username }}</p>
+
+                    <div class="mb-3">
                         {% if order.status == 'completed' %}
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">✅ Erledigt</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">✅ Erledigt</span>
                         {% elif order.status == 'pending' %}
-                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2">⏳ In Bearbeitung</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3">⏳ Wartend</span>
                         {% else %}
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2">❌ Storniert</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3">❌ Storniert</span>
                         {% endif %}
                     </div>
-                </div>
 
-                <div class="card-body p-0">
-                    <ul class="list-group list-group-flush border-top border-light">
-                        {% for item in order.items.all %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-transparent">
-                                <div class="small">
-                                    <span class="fw-semibold text-dark">{{ item.menu_item.name }}</span>
-                                    <span class="text-muted mx-1">•</span>
-                                    <span class="badge bg-light text-dark border">{{ item.quantity }} kg</span>
-                                </div>
-                                <div>
-                                    {% if item.status == 'completed' %}
-                                        <small class="text-success">✅</small>
-                                    {% elif item.status == 'cancelled' %}
-                                        <small class="text-danger">❌</small>
-                                    {% else %}
-                                        <small class="text-warning">⏳</small>
-                                    {% endif %}
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
+                    <button class="btn btn-light w-100 fw-bold text-primary rounded-3 py-2 border-0"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#details-{{ order.id }}">
+                        🔽 Details anzeigen
+                    </button>
 
-                <div class="card-footer bg-white border-top-0 pb-3 px-3">
-                    <div class="d-grid">
-                        <button class="btn btn-light btn-sm fw-bold py-2" style="border-radius: 10px; font-size: 12px; color: #555;">Details anzeigen</button>
+                    <div class="collapse mt-2" id="details-{{ order.id }}">
+                        <div class="pt-2">
+                            <ul class="list-group list-group-flush">
+                                {% for item in order.orderitem_set.all %}
+                                <li class="list-group-item px-0 py-2 border-bottom-0 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        {% if item.menu_item.produkt_type == 'Roh' %}
+                                            <span class="me-2">🥔</span>
+                                        {% else %}
+                                            <span class="me-2">🍟</span>
+                                        {% endif %}
+                                        <span class="small fw-bold text-dark">{{ item.menu_item.name }}</span>
+                                    </div>
+                                    <span class="badge bg-secondary">{{ item.quantity|floatformat:0 }} kg</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                     </div>
+
                 </div>
             </div>
-        {% endfor %}
-    {% else %}
-        <div class="text-center py-5">
-            <div class="display-1 text-muted opacity-25">📦</div>
-            <p class="text-muted mt-3">Es gibt noch keine Bestellungen.</p>
-            <a href="{% url 'admin_dashboard' %}" class="btn btn-primary btn-sm rounded-pill px-4">Zurück zum Dashboard</a>
         </div>
-    {% endif %}
+        {% empty %}
+        <div class="text-center py-5 w-100">
+            <h4 class="text-muted">Hozircha buyurtmalar yo'q.</h4>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 
 <style>
-    /* Status badge-lari uchun yumshoq ranglar (Bootstrap 5.3+ features) */
-    .bg-success-subtle { background-color: #d1e7dd !important; }
-    .bg-warning-subtle { background-color: #fff3cd !important; }
-    .bg-danger-subtle { background-color: #f8d7da !important; }
-    
-    .card { transition: transform 0.2s ease; }
-    .card:active { transform: scale(0.98); }
+    /* Katta ekranlarda 3 ta ustun */
+    .masonry-grid {
+        column-count: 3;
+        column-gap: 1.5rem;
+    }
+
+    /* O'rtacha ekranlarda (Planshet) 2 ta ustun */
+    @media (max-width: 992px) {
+        .masonry-grid {
+            column-count: 2;
+        }
+    }
+
+    /* Kichik ekranlarda (Telefon) 1 ta ustun */
+    @media (max-width: 576px) {
+        .masonry-grid {
+            column-count: 1;
+        }
+    }
+
+    /* Kartochkaning o'zi */
+    .masonry-item {
+        break-inside: avoid; /* Kartochka ikkiga bo'linib qolmasligi uchun */
+        margin-bottom: 0.5rem; /* Pastdagi kartochka bilan oraliq */
+    }
+
+    /* Karta dizayni */
+    .card:hover {
+        transform: translateY(-3px);
+        transition: 0.3s ease;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
 </style>
 {% endblock %}

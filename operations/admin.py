@@ -57,9 +57,18 @@ class ShiftAdmin(admin.ModelAdmin):
 
 @admin.register(Lager)
 class LagerAdmin(admin.ModelAdmin):
-    # 'updated_at'ni o'chirib tashladik, chunki u modelda yo'q ekan
-    list_display = ('menu_item', 'current_stock')
+    # MUHIM: 'current_stock' ham list_display, ham list_editable ichida bo'lishi shart
+    list_display = ('menu_item', 'get_produkt_type', 'current_stock')
 
     search_fields = ('menu_item__name',)
     list_filter = ('menu_item__produkt_type',)
+
+    # Ro'yxatning o'zida tahrirlash imkoniyati
     list_editable = ('current_stock',)
+
+    @admin.display(description='Typ')
+    def get_produkt_type(self, obj):
+        return obj.menu_item.produkt_type
+
+    # Admin panelda Lager obyektini tahrirlashda (Detail view) ko'rinadigan maydonlar
+    fields = ('menu_item', 'current_stock')

@@ -1,112 +1,81 @@
 {% extends 'base.html' %}
-{% block title %}Lagerverwaltung | Kartoffelfirma{% endblock %}
+{% block title %}Lagerbestand | Kartoffelfirma{% endblock %}
 
 {% block content %}
-<div class="container mt-4 pb-5" xmlns:MIN="http://www.w3.org/1999/xhtml">
-    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 shadow-sm" style="border-radius: 15px;">
-        <h2 class="fw-bold mb-0 text-dark">
-            <span class="me-2">📦</span> Lagerverwaltung
-        </h2>
-        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary btn-sm px-3 rounded-pill shadow-sm">
-            <i class="fas fa-arrow-left me-1"></i> Zurück zum Dashboard
+<div class="container mt-4 pb-5">
+
+    <div class="mb-4">
+        <a href="{% url 'admin_dashboard' %}" class="text-decoration-none text-muted d-flex align-items-center gap-2" style="font-size: 1.1rem; font-weight: 500;">
+            <span style="font-size: 1.2rem;">⬅️</span> Zurück zum Dashboard
         </a>
     </div>
 
-    <div class="card border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-dark text-white text-uppercase small fw-bold">
-                        <tr>
-                            <th class="ps-4 py-3">Produktname</th> <th>Typ</th> <th class="text-center">Aktueller Bestand</th> <th class="text-center">Soll-Bestand</th> <th class="text-center" style="width: 280px;">Soll anpassen</th> </tr>
-                    </thead>
-                    <tbody class="border-top-0">
-                        {% for item in items %}
-                        <tr>
-                            <td class="ps-4">
-                                <div class="fw-bold text-primary fs-6">
-                                    {{ item.menu_item.name|default:item.name }}
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge rounded-pill {% if item.menu_item.produkt_type == 'Roh' or item.produkt_type == 'Roh' %}bg-info{% else %}bg-warning{% endif %} text-dark px-3">
-                                    {{ item.menu_item.produkt_type|default:item.produkt_type }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <div class="p-2 rounded-3 d-inline-block
-                                    {% if item.current_stock < item.target_amount or item.stock.current_stock < item.stock.target_amount %}
-                                        bg-danger-subtle text-danger
-                                    {% else %}
-                                        bg-success-subtle text-success
-                                    {% endif %}" style="min-width: 90px;">
-                                    <span class="fw-bold fs-5">
-                                        {{ item.current_stock|default:item.stock.current_stock|default:"0"|floatformat:0 }}
-                                    </span>
-                                    <small>kg</small>
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <div class="bg-light p-2 rounded-3 d-inline-block text-dark border" style="min-width: 90px;">
-                                    <span class="fw-bold fs-5">
-                                        {{ item.target_amount|default:item.stock.target_amount|default:"0"|floatformat:0 }}
-                                    </span>
-                                    <small>kg</small>
-                                </div>
-                            </td>
-                            <td class="pe-4">
-                                <form action="{% url 'update_target' item.menu_item.pk|default:item.pk %}" method="post" class="input-group input-group-sm">
-                                    {% csrf_token %}
-                                    <input type="number" name="target_amount"
-                                           class="form-control text-center fw-bold border-secondary-subtle"
-                                           value="{{ item.target_amount|default:item.stock.target_amount|floatformat:0 }}"
-
-                                           {# MIN: Hozirgi qoldiqdan kam bo'lishi mumkin emas #}
-                                           min="{{ item.current_stock|default:item.stock.current_stock|floatformat:0 }}"
-
-                                           {# STEP: Roh=5, Gar=4 #}
-                                           step="{% if item.menu_item.produkt_type == 'Roh' or item.produkt_type == 'Roh' %}5{% else %}4{% endif %}"
-
-                                           placeholder="Soll kg" required
-
-                                           {# BRAUZER OGOHLANTIRISHLARINI NEMISCHA QILISH #}
-                                           oninvalid="this.setCustomValidity('Der Wert muss mindestens {{ item.current_stock|default:item.stock.current_stock|floatformat:0 }} kg sein und dem Verpackungstyp entsprechen.')"
-                                           oninput="this.setCustomValidity('')">
-
-                                    <button type="submit" class="btn btn-primary px-3 shadow-sm">
-                                        💾 Speichern
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center py-5">
-                                <p class="text-muted fw-bold mb-0">Keine Produkte gefunden.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    <div class="d-flex align-items-center mb-4 ps-1">
+        <div class="bg-success bg-opacity-10 rounded-4 d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+            <span style="font-size: 35px;">📦</span>
+        </div>
+        <div>
+            <h3 class="fw-bold m-0 text-dark">Lagerbestand</h3>
+            <p class="text-muted small m-0">Ombordagi mahsulotlar holati</p>
         </div>
     </div>
 
-    <div class="alert alert-info mt-4 border-0 shadow-sm d-flex align-items-center" style="border-radius: 15px;">
-        <span class="fs-4 me-3">ℹ️</span>
-        <div>
-            <strong>Hinweis:</strong> Wenn die Menge <span class="text-danger fw-bold">rot</span> markiert ist, wurde das Soll noch nicht erreicht.
-            <span class="text-success fw-bold">Grün</span> bedeutet, dass der Bestand ausreichend ist.
+    <div class="row g-4">
+        {% for item in items %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 25px; overflow: hidden;">
+
+                <div class="p-4 text-center {% if item.stock.current_stock > 0 %}bg-success text-white{% else %}bg-secondary text-white{% endif %}" style="position: relative;">
+                    <div class="mb-2 opacity-75">
+                        {% if item.produkt_type == 'Roh' %}
+                            <span style="font-size: 40px;">🥔</span>
+                        {% else %}
+                            <span style="font-size: 40px;">🍟</span>
+                        {% endif %}
+                    </div>
+                    <h1 class="fw-bold display-4 m-0">
+                        {{ item.stock.current_stock|default:0|floatformat:0 }}
+                    </h1>
+                    <span class="fs-5 opacity-75">kg</span>
+
+                    <div class="position-absolute top-0 end-0 m-3">
+                        {% if item.stock.current_stock > 0 %}
+                            <span class="badge bg-white text-success rounded-pill px-2">Verfügbar</span>
+                        {% else %}
+                            <span class="badge bg-dark text-white rounded-pill px-2">Leer</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-body p-4 bg-white">
+                    <h5 class="fw-bold text-dark text-center mb-1">{{ item.name }}</h5>
+                    <p class="text-muted text-center small mb-3">{{ item.beschreibung|default:"-"|truncatechars:40 }}</p>
+
+                    <div class="d-flex justify-content-center gap-2">
+                        {% if item.produkt_type == 'Roh' %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill">
+                                🔹 Roh (5kg)
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning bg-opacity-10 text-dark border border-warning px-3 py-2 rounded-pill">
+                                🔸 Gar (4kg)
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
         </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h4 class="text-muted">Ombor bo'm-bo'sh.</h4>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
 <style>
-    body { background-color: #f8f9fa; }
-    .table-hover tbody tr:hover { background-color: #f2f5f8; transition: 0.2s; }
-    .bg-danger-subtle { background-color: #ffe5e5; }
-    .bg-success-subtle { background-color: #e3f9e5; }
-    .form-control:focus { box-shadow: none; border-color: #0d6efd; }
-    .btn-primary { background-color: #0d6efd; border: none; }
+    body { background-color: #f4f7f6; }
+    .card:hover { transform: translateY(-5px); transition: 0.3s ease; box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
 </style>
 {% endblock %}
