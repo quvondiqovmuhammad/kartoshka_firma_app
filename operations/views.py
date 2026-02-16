@@ -403,26 +403,29 @@ class WorkerDashboardView(RoleRequiredMixin, TemplateView):
         active_shift = Shift.objects.filter(worker=self.request.user, is_active=True).last()
         context['active_shift'] = active_shift
 
-        # 2. Barcha mahsulotlar (Ombor holati bilan)
-        products = MenuItem.objects.filter(verfügbar=True).select_related('stock').order_by('name')
+        # 2. Barcha mahsulotlar
+        products = MenuItem.objects.filter(verfügbar=True).select_related('stock')
 
         data = []
         for item in products:
-            produced_sum = 0
+            # ---------------------------------------------------------
+            # A) Kutilayotgan buyurtmalar (Pending) hisobi
+            # ---------------------------------------------------------
+            pending_sum = OrderItem.objects.filter(
+                menu_item=item,
+                status='pending'
+            ).aggregate(total=Sum('quantity'))['total'] or 0
 
+            # B) Bugungi smenadagi ishlab chiqarish
+            produced_sum = 0
             if active_shift:
-                # ---------------------------------------------------------
-                # ✅ TO'G'IRLANGAN QISM:
-                # Endi biz NOMI va TURI bo'yicha aniq filtrlaymiz.
-                # Shunda "Ganze 1/1 (Roh)" va "Ganze 1/1 (Gar)" alohida hisoblanadi.
-                # ---------------------------------------------------------
                 produced_sum = ShiftReport.objects.filter(
                     shift=active_shift,
-                    product_name=item.name,  # Masalan: "Ganze 1/1"
-                    product_type=item.produkt_type  # Masalan: "Roh" yoki "Gar"
+                    product_name=item.name,
+                    product_type=item.produkt_type
                 ).aggregate(total=Sum('quantity'))['total'] or 0
 
-            # Ombordagi holat
+            # C) Ombordagi holat
             stock_kg = 0
             if hasattr(item, 'stock'):
                 stock_kg = item.stock.current_stock
@@ -433,12 +436,19 @@ class WorkerDashboardView(RoleRequiredMixin, TemplateView):
                 'produkt_type': item.produkt_type,
                 'pkg_size': 5 if item.produkt_type == 'Roh' else 4,
                 'produziert_kg': produced_sum,
-                'lager_kg': stock_kg
+                'lager_kg': stock_kg,
+                'pending_kg': pending_sum  # 👈 Buni qo'shdik (Sortirovka uchun)
             })
+
+        # ---------------------------------------------------------
+        # ✅ SARALASH (SORTIROVKA):
+        # pending_kg bo'yicha kamayish tartibida (reverse=True)
+        # Eng ko'p zakazi borlar tepaga chiqadi.
+        # ---------------------------------------------------------
+        data = sorted(data, key=lambda x: x['pending_kg'], reverse=True)
 
         context['product_data'] = data
         return context
-
 
 @login_required
 @transaction.atomic

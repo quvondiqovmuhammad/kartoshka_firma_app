@@ -8,13 +8,13 @@
         <div class="card-body d-flex justify-content-between align-items-center py-3">
             {% if active_shift %}
                 <div>
-                    <span class="badge bg-success mb-1">Schicht Aktiv</span>
-                    <h5 class="fw-bold m-0 text-dark">Beginn: {{ active_shift.start_time|date:"H:i" }} Uhr</h5>
+                    <span class="badge bg-success mb-1">Schicht aktiv</span>
+                    <h5 class="fw-bold m-0 text-dark">Start: {{ active_shift.start_time|date:"H:i" }} Uhr</h5>
                 </div>
                 <form method="POST" action="{% url 'end_shift' %}" onsubmit="return confirm('Möchten Sie die Schicht wirklich beenden?')">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger fw-bold rounded-pill px-4 shadow-sm">
-                        ⏹ Schicht beenden
+                        ⏹ Beenden
                     </button>
                 </form>
             {% else %}
@@ -25,7 +25,7 @@
                 <form method="POST" action="{% url 'start_shift' %}">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm">
-                        ▶ Schicht starten
+                        ▶ Starten
                     </button>
                 </form>
             {% endif %}
@@ -35,18 +35,18 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold m-0">👷 Produktion</h2>
-            <p class="text-muted small mb-0">Warenzugang erfassen</p>
+            <p class="text-muted small mb-0">Produktionsübersicht</p>
         </div>
         <div>
-            <a href="{% url 'shift_history' %}" class="btn btn-outline-primary btn-sm fw-bold shadow-sm rounded-pill px-3">
-                📜 Meine Historie
+            <a href="{% url 'shift_history' %}" class="btn btn-outline-secondary btn-sm fw-bold shadow-sm rounded-pill px-3">
+                📜 Historie
             </a>
         </div>
     </div>
 
     {% if messages %}
         {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 15px;">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
@@ -55,27 +55,52 @@
 
     <div class="row g-4">
         {% for item in product_data %}
-        <div class="col-12 col-md-6">
-            <div class="card border-0 shadow h-100" style="border-radius: 20px; overflow: hidden;">
+        <div class="col-12 col-md-6 col-lg-4">
 
-                <div class="card-header border-0 py-3 d-flex justify-content-between align-items-center
-                            {% if item.produkt_type == 'Roh' %}bg-primary text-white{% else %}bg-warning text-dark{% endif %}">
+            <div class="card shadow h-100 position-relative {% if item.pending_kg > 0 %}border-danger border-2{% else %}border-0{% endif %}"
+                 style="border-radius: 20px; overflow: hidden; transition: 0.3s;">
+
+                {% if item.pending_kg > 0 %}
+                <div class="bg-danger text-white text-center py-1 fw-bold small">
+                    ⚠️ OFFENE BESTELLUNG
+                </div>
+                {% endif %}
+
+                <div class="card-header border-0 py-3 d-flex justify-content-between align-items-center bg-white">
                     <div>
-                        <h4 class="mb-0 fw-bold">{{ item.name }}</h4>
-                        <small style="opacity: 0.9;">{{ item.pkg_size }}kg Gebinde</small>
+                        <h5 class="mb-0 fw-bold text-dark">{{ item.name }}</h5>
+                        <small class="text-muted">{{ item.pkg_size }}kg Gebinde</small>
                     </div>
-                    <span class="badge bg-light text-dark shadow-sm">{{ item.produkt_type }}</span>
+                    {% if item.produkt_type == 'Roh' %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 rounded-pill">
+                            🥔 Roh
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning px-3 rounded-pill">
+                            🍟 Gar
+                        </span>
+                    {% endif %}
                 </div>
 
-                <div class="card-body">
+                <div class="card-body pt-0">
+
+                    {% if item.pending_kg > 0 %}
+                    <div class="text-center mb-3 p-2 bg-danger bg-opacity-10 rounded-3 border border-danger border-dashed">
+                        <small class="text-danger fw-bold text-uppercase" style="letter-spacing: 1px;">Benötigt:</small>
+                        <div class="display-5 fw-bold text-danger">
+                            {{ item.pending_kg|floatformat:0 }} kg
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <div class="d-flex justify-content-between mb-3 text-center gap-2">
                         <div class="p-2 bg-light rounded flex-fill border">
-                            <small class="text-muted d-block" style="font-size: 0.8rem;">Lagerbestand</small>
-                            <span class="h5 fw-bold text-success">{{ item.lager_kg|floatformat:0 }} kg</span>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Lagerbestand</small>
+                            <span class="fw-bold text-dark">{{ item.lager_kg|floatformat:0 }} kg</span>
                         </div>
                         <div class="p-2 bg-light rounded flex-fill border">
-                            <small class="text-muted d-block" style="font-size: 0.8rem;">Heute produziert</small>
-                            <span class="h5 fw-bold text-primary">{{ item.produziert_kg|floatformat:0 }} kg</span>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Heute produziert</small>
+                            <span class="fw-bold text-primary">{{ item.produziert_kg|floatformat:0 }} kg</span>
                         </div>
                     </div>
 
@@ -83,43 +108,40 @@
                         {% csrf_token %}
                         <input type="hidden" name="menu_item_id" value="{{ item.id }}">
 
-                        <div class="bg-white p-2 rounded">
-                            <label class="small text-muted mb-1 ms-1">Menge (kg)</label>
-                            <div class="input-group mb-2">
+                        <div class="bg-white rounded">
+                            <label class="small text-muted mb-1 ms-1 fw-bold">Menge eingeben (kg):</label>
+
+                            <div class="input-group mb-2 shadow-sm" style="border-radius: 12px; overflow: hidden;">
                                 <input type="number" name="quantity"
                                        id="input_{{ item.id }}"
-                                       class="form-control form-control-lg fw-bold text-center worker-input"
+                                       class="form-control form-control-lg fw-bold text-center worker-input border-0 bg-light"
                                        placeholder="0"
                                        step="{{ item.pkg_size }}"
                                        min="{{ item.pkg_size }}"
                                        required
                                        {% if not active_shift %}disabled{% endif %}>
-                                <span class="input-group-text fw-bold">kg</span>
+                                <span class="input-group-text border-0 bg-light fw-bold text-muted">kg</span>
                             </div>
 
-                            <div class="text-center mb-3">
-                                <small class="text-muted fw-bold" id="display_{{ item.id }}">0 Säcke</small>
+                            <div class="text-center mb-3" style="min-height: 20px;">
+                                <small class="text-muted fw-bold" id="display_{{ item.id }}"></small>
                             </div>
 
                             <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm"
                                     style="border-radius: 12px;"
                                     {% if not active_shift %}disabled{% endif %}>
-                                FERTIG <i class="fas fa-check ms-2"></i>
+                                ✅ FERTIG
                             </button>
                         </div>
                     </form>
                 </div>
 
                 {% if not active_shift %}
-                <div class="card-footer bg-danger-subtle text-danger text-center fw-bold small border-0 py-2">
-                    ⚠️ Bitte Schicht starten, um zu arbeiten!
+                <div class="card-footer bg-secondary text-white text-center small py-2 border-0">
+                    🔒 Bitte Schicht starten
                 </div>
                 {% endif %}
             </div>
-        </div>
-        {% empty %}
-        <div class="col-12 text-center py-5">
-            <h4 class="text-muted">Keine Produkte gefunden. Bitte Admin kontaktieren.</h4>
         </div>
         {% endfor %}
     </div>
@@ -133,19 +155,18 @@
             input.addEventListener('input', function() {
                 const id = this.id.split('_')[1];
                 const display = document.getElementById('display_' + id);
-
                 const step = parseInt(this.getAttribute('step'));
                 const val = parseInt(this.value) || 0;
 
                 if (val > 0) {
                     if (val % step === 0) {
                         const packets = val / step;
-                        display.innerHTML = `<span class="text-success">= ${packets} Säcke (à ${step}kg)</span>`;
+                        display.innerHTML = `<span class="text-success">📦 ${packets} Sack (à ${step}kg)</span>`;
                     } else {
-                        display.innerHTML = `<span class="text-danger">Nur in ${step}kg Schritten!</span>`;
+                        display.innerHTML = `<span class="text-danger small">⚠️ Bitte ${step}kg Schritte nutzen!</span>`;
                     }
                 } else {
-                    display.innerText = "0 Säcke";
+                    display.innerText = "";
                 }
             });
         });
@@ -153,11 +174,12 @@
 </script>
 
 <style>
-    body { background-color: #f8f9fa; }
+    body { background-color: #f4f7f6; }
     .card:hover { transform: translateY(-3px); transition: 0.3s ease; }
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button {
         -webkit-appearance: none; margin: 0;
     }
+    .border-dashed { border-style: dashed !important; }
 </style>
 {% endblock %}
