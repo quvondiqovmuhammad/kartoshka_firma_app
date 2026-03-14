@@ -10,6 +10,10 @@ workflows:
         script: npm install
       - name: iOS kodlarini sinxronlash
         script: npx cap sync ios
+      - name: iOS kutubxonalarini (CocoaPods) o'rnatish
+        script: |
+          cd ios/App
+          pod install
       - name: Xcode orqali yig'ish (Sertifikatsiz test)
         script: |
           cd ios/App
