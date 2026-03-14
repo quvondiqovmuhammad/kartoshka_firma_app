@@ -7,21 +7,22 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Paketlarni o'rnatish va Capacitor tayyorlash
+      - name: 1. Tayyorgarlik (Yashirin xatoni yo'q qilish)
         script: |
+          mkdir -p dist
+          echo "ok" > dist/index.html
           npm install
+          npm install @capacitor/ios
+      - name: 2. iOS ni Mac muhitida toza yaratish
+        script: |
           rm -rf ios
           npx cap add ios
-      - name: Mac kompyuterida Podfile ni majburan yaratish va o'rnatish
+          npx cap sync ios
+      - name: 3. Kutubxonalarni majburiy yangilash
         script: |
           cd ios/App
-          echo "target 'App' do" > Podfile
-          echo "  use_frameworks!" >> Podfile
-          echo "  pod 'Capacitor'" >> Podfile
-          echo "  pod 'CapacitorCordova'" >> Podfile
-          echo "end" >> Podfile
-          pod install
-      - name: Xcode orqali yig'ish (Sertifikatsiz test)
+          pod install --repo-update
+      - name: 4. Xcode orqali yig'ish (Sertifikatsiz)
         script: |
           cd ios/App
           xcodebuild build -workspace App.xcworkspace -scheme App -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
