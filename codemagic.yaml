@@ -1,9 +1,9 @@
 workflows:
   ios-workflow:
     name: iOS Ilovani Yig'ish
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     environment:
-      node: 20
+      node: latest
       xcode: latest
     scripts:
       - name: Paketlarni o'rnatish
