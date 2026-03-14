@@ -1,0 +1,16 @@
+workflows:
+  ios-workflow:
+    name: iOS Ilovani Yig'ish
+    instance_type: mac_mini_m1
+    environment:
+      node: 20
+      xcode: latest
+    scripts:
+      - name: Paketlarni o'rnatish
+        script: npm install
+      - name: iOS kodlarini sinxronlash
+        script: npx cap sync ios
+      - name: Xcode orqali yig'ish (Sertifikatsiz test)
+        script: |
+          cd ios/App
+          xcodebuild build -workspace App.xcworkspace -scheme App -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
