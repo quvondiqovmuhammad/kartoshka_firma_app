@@ -8,12 +8,12 @@ workflows:
     scripts:
       - name: Paketlarni o'rnatish
         script: npm install
-      - name: iOS kodlarini sinxronlash
-        script: npx cap sync ios
-      - name: iOS kutubxonalarini (CocoaPods) o'rnatish
+      - name: Eski ios papkasini o'chirib, Mac'da yangi yaratish
         script: |
-          cd ios/App
-          pod install
+          rm -rf ios
+          npx cap add ios
+      - name: Kodlarni sinxronlash va kutubxonalarni o'rnatish
+        script: npx cap sync ios
       - name: Xcode orqali yig'ish (Sertifikatsiz test)
         script: |
           cd ios/App
