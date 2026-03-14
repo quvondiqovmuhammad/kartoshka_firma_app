@@ -7,14 +7,20 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Paketlarni o'rnatish
-        script: npm install
-      - name: Kodlarni sinxronlash
-        script: npx cap sync ios
-      - name: iOS kutubxonalarini o'rnatish
+      - name: Paketlarni o'rnatish va Capacitor tayyorlash
+        script: |
+          npm install
+          rm -rf ios
+          npx cap add ios
+      - name: Mac kompyuterida Podfile ni majburan yaratish va o'rnatish
         script: |
           cd ios/App
-          pod install --repo-update
+          echo "target 'App' do" > Podfile
+          echo "  use_frameworks!" >> Podfile
+          echo "  pod 'Capacitor'" >> Podfile
+          echo "  pod 'CapacitorCordova'" >> Podfile
+          echo "end" >> Podfile
+          pod install
       - name: Xcode orqali yig'ish (Sertifikatsiz test)
         script: |
           cd ios/App
