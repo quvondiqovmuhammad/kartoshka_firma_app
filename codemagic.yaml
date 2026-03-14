@@ -5,15 +5,19 @@ workflows:
     environment:
       node: latest
       xcode: latest
+      cocoapods: default
     scripts:
       - name: Paketlarni o'rnatish
         script: npm install
-      - name: Eski ios papkasini o'chirib, Mac'da yangi yaratish
+      - name: Eski ios papkasini o'chirib, noldan yasash
         script: |
           rm -rf ios
           npx cap add ios
-      - name: Kodlarni sinxronlash va kutubxonalarni o'rnatish
-        script: npx cap sync ios
+          npx cap sync ios
+      - name: iOS kutubxonalarini o'rnatish (Workspace yaratadi)
+        script: |
+          cd ios/App
+          pod install --repo-update
       - name: Xcode orqali yig'ish (Sertifikatsiz test)
         script: |
           cd ios/App
