@@ -1,0 +1,26 @@
+{
+  "name": "kartoshka_firma",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quvondiqovmuhammad/kartoshka_firma_app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/quvondiqovmuhammad/kartoshka_firma_app/issues"
+  },
+  "homepage": "https://github.com/quvondiqovmuhammad/kartoshka_firma_app#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0"
+  }
+}
