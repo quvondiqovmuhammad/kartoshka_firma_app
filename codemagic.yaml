@@ -9,13 +9,13 @@ workflows:
     scripts:
       - name: 1. Paketlarni o'rnatish
         script: npm install
-      - name: 2. Capacitor sinxronlash
-        script: npx cap sync ios
-      - name: 3. iOS kutubxonalarini ulash
+      - name: 2. Yo'qolgan Podfile ni arxivdan topish va joyiga qo'yish
         script: |
+          npx cap sync ios
+          cp $(find node_modules/@capacitor/ios -name Podfile | head -n 1) ios/App/Podfile
           cd ios/App
-          pod install
-      - name: 4. Xcode orqali yig'ish (Sertifikatsiz test)
+          pod install --repo-update
+      - name: 3. Xcode orqali yig'ish (Sertifikatsiz)
         script: |
           cd ios/App
           xcodebuild build -workspace App.xcworkspace -scheme App -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
