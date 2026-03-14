@@ -9,11 +9,12 @@ workflows:
     scripts:
       - name: Paketlarni o'rnatish
         script: npm install
-      - name: Eski ios papkasini o'chirib, noldan yasash va sinxronlash
+      - name: Kodlarni sinxronlash
+        script: npx cap sync ios
+      - name: iOS kutubxonalarini o'rnatish
         script: |
-          rm -rf ios
-          npx cap add ios
-          npx cap sync ios
+          cd ios/App
+          pod install --repo-update
       - name: Xcode orqali yig'ish (Sertifikatsiz test)
         script: |
           cd ios/App
