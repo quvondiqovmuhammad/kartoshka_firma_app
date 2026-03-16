@@ -43,7 +43,7 @@
                                        disabled
                                        style="border-radius: 10px; border: 1px solid #dee2e6; font-weight: bold; opacity: 0.5;">
                                 <div class="text-center mt-1" id="info_{{ item.id }}" style="font-size: 10px; color: #6c757d; min-height: 15px;">
-                                    <span id="display_{{ item.id }}">0 Paket(e)</span>
+                                    <span id="display_{{ item.id }}">0 Beutel</span>
                                 </div>
                             </div>
 
@@ -54,15 +54,15 @@
             {% endfor %}
         </div>
 
-        <div class="sticky-bottom bg-white p-3 mt-4 border-top shadow-lg" style="margin: 0 -12px; border-radius: 20px 20px 0 0;">
+        <div class="mt-5 mb-4">
             <div class="row g-2">
                 <div class="col-4">
-                    <a href="{% url 'customer_orders' %}" class="btn btn-light w-100 py-2 fw-bold" style="border-radius: 12px; color: #6c757d;">
+                    <a href="{% url 'customer_orders' %}" class="btn btn-light w-100 py-3 fw-bold shadow-sm" style="border-radius: 12px; color: #6c757d;">
                         ⬅️ Zurück
                     </a>
                 </div>
                 <div class="col-8">
-                    <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-sm" style="border-radius: 12px;">
+                    <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm" style="border-radius: 12px;">
                         ✅ Jetzt bestellen
                     </button>
                 </div>
@@ -92,7 +92,8 @@
                     input.disabled = true;
                     input.value = "";
                     input.style.opacity = "0.5";
-                    displaySpan.innerText = "0 Paket(e)";
+                    // Paket(e) o'rniga Beutel
+                    displaySpan.innerText = "0 Beutel";
                     infoDiv.style.color = "#6c757d";
                     input.style.borderColor = "#dee2e6";
                 }
@@ -107,18 +108,19 @@
             const val = parseInt(input.value) || 0;
 
             if (!input.value || val === 0) {
-                displaySpan.innerText = "0 Paket(e)";
+                // Paket(e) o'rniga Beutel
+                displaySpan.innerText = "0 Beutel";
                 infoDiv.style.color = "#6c757d";
                 input.style.borderColor = "#dee2e6";
                 return;
             }
 
             if (val > 0 && val % step === 0) {
-                displaySpan.innerText = (val / step) + " Paket(e)";
+                // Paket(e) o'rniga Beutel
+                displaySpan.innerText = (val / step) + " Beutel";
                 infoDiv.style.color = "#198754";
                 input.style.borderColor = "#198754";
             } else {
-                // XATO BO'LGANDA: Faqat nemischa matn, paketlar soni yashiriladi
                 displaySpan.innerText = "Ungültige Menge!";
                 infoDiv.style.color = "#dc3545";
                 input.style.borderColor = "#dc3545";

@@ -20,47 +20,52 @@
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-3">
         {% for item in items %}
-        <div class="col-12 col-md-6 col-lg-4">
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 25px; overflow: hidden;">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm custom-list-card" style="border-radius: 15px; overflow: hidden;">
 
-                <div class="p-4 text-center {% if item.stock.current_stock > 0 %}bg-success text-white{% else %}bg-secondary text-white{% endif %}" style="position: relative;">
-                    <div class="mb-2 opacity-75">
-                        {% if item.produkt_type == 'Roh' %}
-                            <span style="font-size: 40px;">🥔</span>
-                        {% else %}
-                            <span style="font-size: 40px;">🍟</span>
-                        {% endif %}
+                <div class="card-body p-3 d-flex justify-content-between align-items-center cursor-pointer"
+                     data-bs-toggle="collapse" href="#collapse_{{ item.id }}" role="button" aria-expanded="false" aria-controls="collapse_{{ item.id }}"
+                     onclick="toggleIcon(this)">
+
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 24px;">
+                            {% if item.produkt_type == 'Roh' %}🥔{% else %}🍟{% endif %}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold m-0 text-dark" style="font-size: 1.1rem;">{{ item.name }}</h6>
+                            <small class="fw-bold {% if item.stock.current_stock > 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if item.stock.current_stock > 0 %}Verfügbar{% else %}Leer{% endif %}
+                            </small>
+                        </div>
                     </div>
-                    <h1 class="fw-bold display-4 m-0">
-                        {{ item.stock.current_stock|default:0|floatformat:0 }}
-                    </h1>
-                    <span class="fs-5 opacity-75">kg</span>
 
-                    <div class="position-absolute top-0 end-0 m-3">
-                        {% if item.stock.current_stock > 0 %}
-                            <span class="badge bg-white text-success rounded-pill px-2">Verfügbar</span>
-                        {% else %}
-                            <span class="badge bg-dark text-white rounded-pill px-2">Leer</span>
-                        {% endif %}
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="text-end">
+                            <h4 class="fw-bold m-0 {% if item.stock.current_stock > 0 %}text-success{% else %}text-secondary{% endif %}">
+                                {{ item.stock.current_stock|default:0|floatformat:0 }} <span class="fs-6 text-muted">kg</span>
+                            </h4>
+                        </div>
+                        <span class="text-muted chevron-icon transition-300" style="font-size: 1.2rem;">🔽</span>
                     </div>
                 </div>
 
-                <div class="card-body p-4 bg-white">
-                    <h5 class="fw-bold text-dark text-center mb-1">{{ item.name }}</h5>
-                    <p class="text-muted text-center small mb-3">{{ item.beschreibung|default:"-"|truncatechars:40 }}</p>
+                <div class="collapse" id="collapse_{{ item.id }}">
+                    <div class="card-footer bg-white border-top p-3">
+                        <p class="text-muted small mb-3">{{ item.beschreibung|default:"Keine Beschreibung verfügbar." }}</p>
 
-                    <div class="d-flex justify-content-center gap-2">
-                        {% if item.produkt_type == 'Roh' %}
-                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill">
-                                🔹 Roh (5kg)
-                            </span>
-                        {% else %}
-                            <span class="badge bg-warning bg-opacity-10 text-dark border border-warning px-3 py-2 rounded-pill">
-                                🔸 Gar (4kg)
-                            </span>
-                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            {% if item.produkt_type == 'Roh' %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill">
+                                    🔹 Roh (5kg)
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-dark border border-warning px-3 py-2 rounded-pill">
+                                    🔸 Gar (4kg)
+                                </span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
@@ -68,14 +73,29 @@
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <h4 class="text-muted">Ombor bo'm-bo'sh.</h4>
+            <h4 class="text-muted">📦 Ombor bo'm-bo'sh.</h4>
         </div>
         {% endfor %}
     </div>
 </div>
 
+<script>
+    // Ptitichka (🔽) ni aylantirish animatsiyasi uchun js
+    function toggleIcon(element) {
+        let icon = element.querySelector('.chevron-icon');
+        if (element.getAttribute('aria-expanded') === 'true') {
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+</script>
+
 <style>
     body { background-color: #f4f7f6; }
-    .card:hover { transform: translateY(-5px); transition: 0.3s ease; box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .custom-list-card { transition: all 0.2s ease; }
+    .custom-list-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
+    .cursor-pointer { cursor: pointer; }
+    .transition-300 { transition: transform 0.3s ease; }
 </style>
 {% endblock %}

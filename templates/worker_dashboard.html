@@ -2,29 +2,29 @@
 {% block title %}Produktion | Kartoffelfirma{% endblock %}
 
 {% block content %}
-<div class="container pb-5 mt-4">
+<div class="container pb-5 mt-3">
 
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; background: {% if active_shift %}#e8f5e9{% else %}#fff3e0{% endif %};">
-        <div class="card-body d-flex justify-content-between align-items-center py-3">
+    <div class="card border-0 shadow-sm mb-3" style="border-radius: 15px; background: {% if active_shift %}#e8f5e9{% else %}#fff3e0{% endif %};">
+        <div class="card-body d-flex justify-content-between align-items-center py-2 px-3">
             {% if active_shift %}
                 <div>
-                    <span class="badge bg-success mb-1">Schicht aktiv</span>
-                    <h5 class="fw-bold m-0 text-dark">Start: {{ active_shift.start_time|date:"H:i" }} Uhr</h5>
+                    <span class="badge bg-success mb-1" style="font-size: 0.7rem;">Schicht aktiv</span>
+                    <h6 class="fw-bold m-0 text-dark">Start: {{ active_shift.start_time|date:"H:i" }}</h6>
                 </div>
                 <form method="POST" action="{% url 'end_shift' %}" onsubmit="return confirm('Möchten Sie die Schicht wirklich beenden?')">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger fw-bold rounded-pill px-4 shadow-sm">
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold rounded-pill px-3 shadow-sm">
                         ⏹ Beenden
                     </button>
                 </form>
             {% else %}
                 <div>
-                    <span class="badge bg-warning text-dark mb-1">Inaktiv</span>
-                    <h5 class="fw-bold m-0 text-muted">Keine aktive Schicht</h5>
+                    <span class="badge bg-warning text-dark mb-1" style="font-size: 0.7rem;">Inaktiv</span>
+                    <h6 class="fw-bold m-0 text-muted">Keine aktive Schicht</h6>
                 </div>
                 <form method="POST" action="{% url 'start_shift' %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm">
+                    <button type="submit" class="btn btn-primary btn-sm fw-bold rounded-pill px-3 shadow-sm">
                         ▶ Starten
                     </button>
                 </form>
@@ -32,13 +32,13 @@
         </div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 px-1">
         <div>
-            <h2 class="fw-bold m-0">👷 Produktion</h2>
-            <p class="text-muted small mb-0">Produktionsübersicht</p>
+            <h4 class="fw-bold m-0 text-dark">👷 Produktion</h4>
+            <p class="text-muted mb-0" style="font-size: 0.8rem;">Produktionsübersicht</p>
         </div>
         <div>
-            <a href="{% url 'shift_history' %}" class="btn btn-outline-secondary btn-sm fw-bold shadow-sm rounded-pill px-3">
+            <a href="{% url 'shift_history' %}" class="btn btn-white border shadow-sm btn-sm fw-bold rounded-pill px-3 text-dark">
                 📜 Historie
             </a>
         </div>
@@ -46,112 +46,183 @@
 
     {% if messages %}
         {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 15px;">
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm py-2" role="alert" style="border-radius: 10px; font-size: 0.85rem;">
                 {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" style="padding: 0.8rem;" data-bs-dismiss="alert"></button>
             </div>
         {% endfor %}
     {% endif %}
 
-    <div class="row g-4">
-        {% for item in product_data %}
-        <div class="col-12 col-md-6 col-lg-4">
+    <div class="row g-2">
 
-            <div class="card shadow h-100 position-relative {% if item.pending_kg > 0 %}border-danger border-2{% else %}border-0{% endif %}"
-                 style="border-radius: 20px; overflow: hidden; transition: 0.3s;">
+        <div class="col-6">
 
-                {% if item.pending_kg > 0 %}
-                <div class="bg-danger text-white text-center py-1 fw-bold small">
-                    ⚠️ OFFENE BESTELLUNG
-                </div>
-                {% endif %}
-
-                <div class="card-header border-0 py-3 d-flex justify-content-between align-items-center
-                            {% if item.produkt_type == 'Roh' %}bg-primary{% else %}bg-warning{% endif %}">
-
-                    <div class="text-white"> <h3 class="mb-0 fw-bold" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
-                            {{ item.name }}
-                        </h3>
-                        <small class="opacity-75" style="color: #fff;">{{ item.pkg_size }}kg Gebinde</small>
-                    </div>
-
-                    {% if item.produkt_type == 'Roh' %}
-                        <span class="badge bg-white text-primary fw-bold fs-6 shadow-sm px-3 py-2 rounded-pill">
-                            🥔 Roh
-                        </span>
-                    {% else %}
-                        <span class="badge bg-white text-dark fw-bold fs-6 shadow-sm px-3 py-2 rounded-pill">
-                            🍟 Gar
-                        </span>
-                    {% endif %}
-                </div>
-
-                <div class="card-body pt-3">
-
-                    {% if item.pending_kg > 0 %}
-                    <div class="text-center mb-3 p-2 bg-danger bg-opacity-10 rounded-3 border border-danger border-dashed">
-                        <small class="text-danger fw-bold text-uppercase" style="letter-spacing: 1px;">Benötigt:</small>
-                        <div class="display-5 fw-bold text-danger">
-                            {{ item.pending_kg|floatformat:0 }} kg
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <div class="d-flex justify-content-between mb-3 text-center gap-2">
-                        <div class="p-2 bg-light rounded flex-fill border">
-                            <small class="text-muted d-block" style="font-size: 0.75rem;">Lagerbestand</small>
-                            <span class="fw-bold text-dark">{{ item.lager_kg|floatformat:0 }} kg</span>
-                        </div>
-                        <div class="p-2 bg-light rounded flex-fill border">
-                            <small class="text-muted d-block" style="font-size: 0.75rem;">Heute produziert</small>
-                            <span class="fw-bold text-primary">{{ item.produziert_kg|floatformat:0 }} kg</span>
-                        </div>
-                    </div>
-
-                    <form action="{% url 'worker_produce' %}" method="POST" class="mt-2">
-                        {% csrf_token %}
-                        <input type="hidden" name="menu_item_id" value="{{ item.id }}">
-
-                        <div class="bg-white rounded">
-                            <label class="small text-muted mb-1 ms-1 fw-bold">Menge eingeben (kg):</label>
-
-                            <div class="input-group mb-2 shadow-sm" style="border-radius: 12px; overflow: hidden;">
-                                <input type="number" name="quantity"
-                                       id="input_{{ item.id }}"
-                                       class="form-control form-control-lg fw-bold text-center worker-input border-0 bg-light"
-                                       placeholder="0"
-                                       step="{{ item.pkg_size }}"
-                                       min="{{ item.pkg_size }}"
-                                       required
-                                       {% if not active_shift %}disabled{% endif %}>
-                                <span class="input-group-text border-0 bg-light fw-bold text-muted">kg</span>
+            {% for item in product_data %}
+                {% if item.produkt_type == 'Roh' and item.pending_kg > 0 %}
+                    <div class="card border border-danger border-2 shadow-sm mb-2 custom-list-card" style="border-radius: 12px; background-color: #fffbfb;">
+                        <div class="card-header bg-transparent border-0 p-2 text-center cursor-pointer" data-bs-toggle="collapse" href="#collapse_{{ item.id }}" onclick="toggleIcon(this)">
+                            <div class="badge bg-danger rounded-pill mb-1 shadow-sm" style="font-size: 0.65rem;">
+                                ⚠️ {{ item.pending_kg|floatformat:0 }} kg
                             </div>
-
-                            <div class="text-center mb-3" style="min-height: 20px;">
-                                <small class="text-muted fw-bold" id="display_{{ item.id }}"></small>
-                            </div>
-
-                            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm"
-                                    style="border-radius: 12px;"
-                                    {% if not active_shift %}disabled{% endif %}>
-                                ✅ FERTIG
-                            </button>
+                            <h6 class="fw-bold m-0 text-danger" style="font-size: 0.8rem; line-height: 1.2;">{{ item.name }}</h6>
+                            <div class="mt-1"><span class="chevron-icon transition-300 d-inline-block text-danger" style="font-size: 0.8rem;">🔽</span></div>
                         </div>
-                    </form>
-                </div>
 
-                {% if not active_shift %}
-                <div class="card-footer bg-secondary text-white text-center small py-2 border-0">
-                    🔒 Bitte Schicht starten
-                </div>
+                        <div class="collapse" id="collapse_{{ item.id }}">
+                            <div class="card-body p-2 bg-white border-top">
+                                <div class="d-flex justify-content-between mb-2 gap-1 text-center">
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.6rem;">Lager</small>
+                                        <span class="fw-bold text-success" style="font-size: 0.8rem;">{{ item.lager_kg|floatformat:0 }} kg</span>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.6rem;">Heute</small>
+                                        <span class="fw-bold text-primary" style="font-size: 0.8rem;">{{ item.produziert_kg|floatformat:0 }} kg</span>
+                                    </div>
+                                </div>
+                                <form action="{% url 'worker_produce' %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="menu_item_id" value="{{ item.id }}">
+                                    <input type="number" name="quantity" id="input_{{ item.id }}" class="form-control fw-bold text-center border-0 bg-light mb-1 custom-input" placeholder="Menge eingeben" step="{{ item.pkg_size }}" min="{{ item.pkg_size }}" required {% if not active_shift %}disabled{% endif %}>
+                                    <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm custom-btn" {% if not active_shift %}disabled{% endif %}>✅ FERTIG</button>
+                                    <div class="text-center mt-1" style="min-height: 12px;"><small class="fw-bold" style="font-size: 0.65rem;" id="display_{{ item.id }}"></small></div>
+                                </form>
+                            </div>
+                            {% if not active_shift %}<div class="card-footer bg-light text-muted text-center py-1 border-0" style="font-size: 0.6rem;">🔒 Schicht starten</div>{% endif %}
+                        </div>
+                    </div>
                 {% endif %}
-            </div>
+            {% endfor %}
+
+            {% for item in product_data %}
+                {% if item.produkt_type == 'Roh' and item.pending_kg <= 0 %}
+                    <div class="card border-0 shadow-sm mb-2 custom-list-card" style="border-radius: 12px;">
+                        <div class="card-header bg-white border-0 p-2 text-center cursor-pointer" data-bs-toggle="collapse" href="#collapse_{{ item.id }}" onclick="toggleIcon(this)">
+                            <div class="text-muted mb-1" style="font-size: 1.2rem;">🥔</div>
+                            <h6 class="fw-bold m-0 text-dark" style="font-size: 0.8rem; line-height: 1.2;">{{ item.name }}</h6>
+                            <div class="mt-1"><span class="chevron-icon transition-300 d-inline-block text-muted" style="font-size: 0.8rem;">🔽</span></div>
+                        </div>
+
+                        <div class="collapse" id="collapse_{{ item.id }}">
+                            <div class="card-body p-2 bg-white border-top">
+                                <div class="d-flex justify-content-between mb-2 gap-1 text-center">
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.6rem;">Lager</small>
+                                        <span class="fw-bold text-success" style="font-size: 0.8rem;">{{ item.lager_kg|floatformat:0 }} kg</span>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.6rem;">Heute</small>
+                                        <span class="fw-bold text-primary" style="font-size: 0.8rem;">{{ item.produziert_kg|floatformat:0 }} kg</span>
+                                    </div>
+                                </div>
+                                <form action="{% url 'worker_produce' %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="menu_item_id" value="{{ item.id }}">
+                                    <input type="number" name="quantity" id="input_{{ item.id }}" class="form-control fw-bold text-center border-0 bg-light mb-1 custom-input" placeholder="Menge eingeben" step="{{ item.pkg_size }}" min="{{ item.pkg_size }}" required {% if not active_shift %}disabled{% endif %}>
+                                    <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm custom-btn" {% if not active_shift %}disabled{% endif %}>✅ FERTIG</button>
+                                    <div class="text-center mt-1" style="min-height: 12px;"><small class="fw-bold" style="font-size: 0.65rem;" id="display_{{ item.id }}"></small></div>
+                                </form>
+                            </div>
+                            {% if not active_shift %}<div class="card-footer bg-light text-muted text-center py-1 border-0" style="font-size: 0.6rem;">🔒 Schicht starten</div>{% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
         </div>
-        {% endfor %}
+
+
+        <div class="col-6">
+
+            {% for item in product_data %}
+                {% if item.produkt_type != 'Roh' and item.pending_kg > 0 %}
+                    <div class="card border border-danger border-2 shadow-sm mb-2 custom-list-card" style="border-radius: 12px; background-color: #fffbfb;">
+                        <div class="card-header bg-transparent border-0 p-2 text-center cursor-pointer" data-bs-toggle="collapse" href="#collapse_{{ item.id }}" onclick="toggleIcon(this)">
+                            <div class="badge bg-danger rounded-pill mb-1 shadow-sm" style="font-size: 0.65rem;">
+                                ⚠️ {{ item.pending_kg|floatformat:0 }} kg
+                            </div>
+                            <h6 class="fw-bold m-0 text-danger" style="font-size: 0.8rem; line-height: 1.2;">{{ item.name }}</h6>
+                            <div class="mt-1"><span class="chevron-icon transition-300 d-inline-block text-danger" style="font-size: 0.8rem;">🔽</span></div>
+                        </div>
+
+                        <div class="collapse" id="collapse_{{ item.id }}">
+                            <div class="card-body p-2 bg-white border-top">
+                                <div class="d-flex justify-content-between mb-2 gap-1 text-center">
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.6rem;">Lager</small>
+                                        <span class="fw-bold text-success" style="font-size: 0.8rem;">{{ item.lager_kg|floatformat:0 }} kg</span>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.6rem;">Heute</small>
+                                        <span class="fw-bold text-primary" style="font-size: 0.8rem;">{{ item.produziert_kg|floatformat:0 }} kg</span>
+                                    </div>
+                                </div>
+                                <form action="{% url 'worker_produce' %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="menu_item_id" value="{{ item.id }}">
+                                    <input type="number" name="quantity" id="input_{{ item.id }}" class="form-control fw-bold text-center border-0 bg-light mb-1 custom-input" placeholder="Menge eingeben" step="{{ item.pkg_size }}" min="{{ item.pkg_size }}" required {% if not active_shift %}disabled{% endif %}>
+                                    <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm custom-btn" {% if not active_shift %}disabled{% endif %}>✅ FERTIG</button>
+                                    <div class="text-center mt-1" style="min-height: 12px;"><small class="fw-bold" style="font-size: 0.65rem;" id="display_{{ item.id }}"></small></div>
+                                </form>
+                            </div>
+                            {% if not active_shift %}<div class="card-footer bg-light text-muted text-center py-1 border-0" style="font-size: 0.6rem;">🔒 Schicht starten</div>{% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            {% for item in product_data %}
+                {% if item.produkt_type != 'Roh' and item.pending_kg <= 0 %}
+                    <div class="card border-0 shadow-sm mb-2 custom-list-card" style="border-radius: 12px;">
+                        <div class="card-header bg-white border-0 p-2 text-center cursor-pointer" data-bs-toggle="collapse" href="#collapse_{{ item.id }}" onclick="toggleIcon(this)">
+                            <div class="text-muted mb-1" style="font-size: 1.2rem;">🍟</div>
+                            <h6 class="fw-bold m-0 text-dark" style="font-size: 0.8rem; line-height: 1.2;">{{ item.name }}</h6>
+                            <div class="mt-1"><span class="chevron-icon transition-300 d-inline-block text-muted" style="font-size: 0.8rem;">🔽</span></div>
+                        </div>
+
+                        <div class="collapse" id="collapse_{{ item.id }}">
+                            <div class="card-body p-2 bg-white border-top">
+                                <div class="d-flex justify-content-between mb-2 gap-1 text-center">
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.6rem;">Lager</small>
+                                        <span class="fw-bold text-success" style="font-size: 0.8rem;">{{ item.lager_kg|floatformat:0 }} kg</span>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.6rem;">Heute</small>
+                                        <span class="fw-bold text-primary" style="font-size: 0.8rem;">{{ item.produziert_kg|floatformat:0 }} kg</span>
+                                    </div>
+                                </div>
+                                <form action="{% url 'worker_produce' %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="menu_item_id" value="{{ item.id }}">
+                                    <input type="number" name="quantity" id="input_{{ item.id }}" class="form-control fw-bold text-center border-0 bg-light mb-1 custom-input" placeholder="Menge eingeben" step="{{ item.pkg_size }}" min="{{ item.pkg_size }}" required {% if not active_shift %}disabled{% endif %}>
+                                    <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm custom-btn" {% if not active_shift %}disabled{% endif %}>✅ FERTIG</button>
+                                    <div class="text-center mt-1" style="min-height: 12px;"><small class="fw-bold" style="font-size: 0.65rem;" id="display_{{ item.id }}"></small></div>
+                                </form>
+                            </div>
+                            {% if not active_shift %}<div class="card-footer bg-light text-muted text-center py-1 border-0" style="font-size: 0.6rem;">🔒 Schicht starten</div>{% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
     </div>
 </div>
 
 <script>
+    // Akkordeon ochilganda strelka aylanishi uchun
+    function toggleIcon(element) {
+        let icon = element.querySelector('.chevron-icon');
+        setTimeout(() => {
+            if (element.getAttribute('aria-expanded') === 'true') {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }, 50);
+    }
+
+    // Input yozilganda Beutel (Sack) ni hisoblash
     document.addEventListener('DOMContentLoaded', function() {
         const inputs = document.querySelectorAll('.worker-input');
 
@@ -165,9 +236,10 @@
                 if (val > 0) {
                     if (val % step === 0) {
                         const packets = val / step;
-                        display.innerHTML = `<span class="text-success">📦 ${packets} Sack (à ${step}kg)</span>`;
+                        // Sack o'rniga Beutel yozildi
+                        display.innerHTML = `<span class="text-success">📦 ${packets} Beutel (à ${step}kg)</span>`;
                     } else {
-                        display.innerHTML = `<span class="text-danger small">⚠️ Bitte ${step}kg Schritte nutzen!</span>`;
+                        display.innerHTML = `<span class="text-danger">⚠️ Bitte ${step}kg Schritte nutzen!</span>`;
                     }
                 } else {
                     display.innerText = "";
@@ -179,11 +251,22 @@
 
 <style>
     body { background-color: #f4f7f6; }
-    .card:hover { transform: translateY(-3px); transition: 0.3s ease; }
+
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button {
         -webkit-appearance: none; margin: 0;
     }
-    .border-dashed { border-style: dashed !important; }
+
+    .cursor-pointer { cursor: pointer; }
+    .transition-300 { transition: transform 0.3s ease; }
+
+    /* Yangi dizayn uchun qulay classlar */
+    .custom-list-card { transition: all 0.2s ease; }
+    .custom-list-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
+
+    .custom-input { border-radius: 8px; font-size: 0.85rem; padding: 0.4rem; }
+    .custom-input:focus { box-shadow: none; border: 1px solid #198754 !important; }
+
+    .custom-btn { border-radius: 8px; padding: 0.35rem; font-size: 0.85rem; }
 </style>
 {% endblock %}
