@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block title %}Fabrikeinstellungen | Admin{% endblock %}
+
+{% block content %}
+<div class="container pb-5" style="max-width: 800px;">
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm border-0 mb-4" style="border-radius: 15px;" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex align-items-center justify-content-between mb-4 mt-3">
+        <div class="d-flex align-items-center">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 55px; height: 55px; flex-shrink: 0;">
+                <span style="font-size: 28px;">⚙️</span>
+            </div>
+            <div>
+                <h2 class="fw-bold m-0 text-dark fs-3">Fabrikeinstellungen</h2>
+                <p class="text-muted small m-0">Palettenbasierte Produktionskapazität & Schichtparameter</p>
+            </div>
+        </div>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary btn-sm px-3 py-2 fw-semibold" style="border-radius: 12px;">
+            ⬅️ Dashboard
+        </a>
+    </div>
+
+    <!-- Live Status Card -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; background: linear-gradient(135deg, #212529, #343a40); color: #fff;">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">⚡ Aktuelle Konfiguration</span>
+                <small class="text-light opacity-75">Stand: {{ settings.updated_at|date:"d.m.Y H:i" }}</small>
+            </div>
+            <div class="row g-3 text-center">
+                <div class="col-6 col-md-3">
+                    <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                        <small class="text-light opacity-75 d-block">Palettenrate</small>
+                        <span class="fs-5 fw-bold text-warning">{{ settings.palettes_per_hour|floatformat:1 }} Pal/h</span>
+                        <div class="small opacity-50">à {{ settings.kg_per_palette|floatformat:0 }} kg</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                        <small class="text-light opacity-75 d-block">Stundenziel</small>
+                        <span class="fs-5 fw-bold text-info">{{ settings.hourly_production_target_kg|floatformat:0 }} kg/h</span>
+                        <div class="small opacity-50">Kapazität / Std.</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                        <small class="text-light opacity-75 d-block">24h-Tagesziel</small>
+                        <span class="fs-5 fw-bold text-light">{{ settings.daily_production_target_kg|floatformat:0 }} kg</span>
+                        <div class="small opacity-50">24h Gesamtziel</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                        <small class="text-light opacity-75 d-block">Cut-off-Zeit</small>
+                        <span class="fs-5 fw-bold text-danger">{{ settings.next_day_cutoff_time|time:"H:i" }}</span>
+                        <div class="small opacity-50">Folgetag-Grenze</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form Card -->
+    <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+        <div class="card-body p-4 p-md-5">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mb-4" style="border-radius: 12px;">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Sektion 1: Palettenbasierte Produktionskapazität -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fs-4 me-2">🏭</span>
+                        <h5 class="fw-bold m-0 text-dark">1. Produktionskapazität (Paletten & Gewicht)</h5>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.palettes_per_hour.id_for_label }}" class="form-label fw-semibold text-secondary small">
+                                {{ form.palettes_per_hour.label }} <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                {{ form.palettes_per_hour }}
+                                <span class="input-group-text bg-light fw-bold">Pal / h</span>
+                            </div>
+                            <small class="text-muted d-block mt-1">z.B. 2.0 Paletten pro Stunde</small>
+                            {% if form.palettes_per_hour.errors %}
+                                <div class="text-danger small mt-1">{{ form.palettes_per_hour.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.kg_per_palette.id_for_label }}" class="form-label fw-semibold text-secondary small">
+                                {{ form.kg_per_palette.label }} <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                {{ form.kg_per_palette }}
+                                <span class="input-group-text bg-light fw-bold">kg / Palette</span>
+                            </div>
+                            <small class="text-muted d-block mt-1">z.B. 625 kg pro Palette</small>
+                            {% if form.kg_per_palette.errors %}
+                                <div class="text-danger small mt-1">{{ form.kg_per_palette.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Live Dynamic 24h & Hourly Calculation -->
+                        <div class="col-12">
+                            <div id="daily-calc-preview" class="p-3 bg-light rounded-3 mt-2 border">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                    <span class="text-muted small">Berechnete Kapazität:</span>
+                                    <strong id="calc-headline" class="text-primary fs-5">1.250 kg/h | 30.000 kg (24h)</strong>
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size: 0.8rem;">
+                                    (Berechnung: <span id="calc-formula">2 Pal/h × 625 kg = 1.250 kg/h | 1.250 × 24h = 30.000 kg/Tag</span>)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4 text-muted opacity-25">
+
+                <!-- Sektion 2: Cut-off-Zeit -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fs-4 me-2">⏱️</span>
+                        <h5 class="fw-bold m-0 text-dark">2. Cut-off-Zeit (Bestellschluss)</h5>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.next_day_cutoff_time.id_for_label }}" class="form-label fw-semibold text-secondary small">
+                                {{ form.next_day_cutoff_time.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.next_day_cutoff_time }}
+                            <small class="text-muted d-block mt-1">Bestellungen nach dieser Zeit werden automatisch für den Folgetag eingeplant (z.B. 22:00 Uhr)</small>
+                            {% if form.next_day_cutoff_time.errors %}
+                                <div class="text-danger small mt-1">{{ form.next_day_cutoff_time.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4 text-muted opacity-25">
+
+                <!-- Sektion 3: Arbeitszeiten -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="fs-4 me-2">🕒</span>
+                        <h5 class="fw-bold m-0 text-dark">3. Arbeits- & Schichtzeiten</h5>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <h6 class="fw-bold text-primary mb-2 small text-uppercase">🏢 Büro Arbeitszeiten</h6>
+                        </div>
+                        <div class="col-6">
+                            <label for="{{ form.buro_working_start.id_for_label }}" class="form-label fw-semibold text-secondary small">
+                                Beginn
+                            </label>
+                            {{ form.buro_working_start }}
+                            {% if form.buro_working_start.errors %}
+                                <div class="text-danger small mt-1">{{ form.buro_working_start.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-6">
+                            <label for="{{ form.buro_working_end.id_for_label }}" class="form-label fw-semibold text-secondary small">
+                                Ende
+                            </label>
+                            {{ form.buro_working_end }}
+                            {% if form.buro_working_end.errors %}
+                                <div class="text-danger small mt-1">{{ form.buro_working_end.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <h6 class="fw-bold text-success mb-2 small text-uppercase">⚙️ Produktion Schichtzeiten</h6>
+                        </div>
+                        <div class="col-6">
+                            <label for="{{ form.production_working_start.id_for_label }}" class="form-label fw-semibold text-secondary small">
+                                Schichtbeginn
+                            </label>
+                            {{ form.production_working_start }}
+                            {% if form.production_working_start.errors %}
+                                <div class="text-danger small mt-1">{{ form.production_working_start.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-6">
+                            <label for="{{ form.production_working_end.id_for_label }}" class="form-label fw-semibold text-secondary small">
+                                Schichtende
+                            </label>
+                            {{ form.production_working_end }}
+                            {% if form.production_working_end.errors %}
+                                <div class="text-danger small mt-1">{{ form.production_working_end.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid gap-2 mt-5">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 shadow" style="border-radius: 15px; background: linear-gradient(45deg, #0d6efd, #0b5ed7);">
+                        💾 Einstellungen speichern
+                    </button>
+                    <a href="{% url 'admin_dashboard' %}" class="btn btn-light py-3 fw-semibold text-muted" style="border-radius: 15px;">
+                        Abbrechen
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const palettesInput = document.getElementById('{{ form.palettes_per_hour.id_for_label }}');
+        const kgInput = document.getElementById('{{ form.kg_per_palette.id_for_label }}');
+        const calcHeadlineEl = document.getElementById('calc-headline');
+        const formulaEl = document.getElementById('calc-formula');
+
+        function updateCapacityCalculation() {
+            if (!palettesInput || !kgInput || !calcHeadlineEl) return;
+            const palettes = parseFloat(palettesInput.value) || 0;
+            const kgPerPalette = parseFloat(kgInput.value) || 0;
+            const hourlyKg = palettes * kgPerPalette;
+            const dailyKg = hourlyKg * 24;
+
+            calcHeadlineEl.textContent = `Berechnete Kapazität: ${hourlyKg.toLocaleString('de-DE')} kg/h | ${dailyKg.toLocaleString('de-DE')} kg (24h)`;
+            if (formulaEl) {
+                formulaEl.textContent = `${palettes.toLocaleString('de-DE')} Pal/h × ${kgPerPalette.toLocaleString('de-DE')} kg = ${hourlyKg.toLocaleString('de-DE')} kg/h | ${hourlyKg.toLocaleString('de-DE')} × 24h = ${dailyKg.toLocaleString('de-DE')} kg/Tag`;
+            }
+        }
+
+        if (palettesInput && kgInput) {
+            palettesInput.addEventListener('input', updateCapacityCalculation);
+            kgInput.addEventListener('input', updateCapacityCalculation);
+            updateCapacityCalculation();
+        }
+    });
+</script>
+{% endblock %}

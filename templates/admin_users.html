@@ -23,7 +23,7 @@
     {% if pending_users %}
     <div class="card border-0 shadow-sm mb-5" style="border-radius: 20px; border-left: 5px solid #ffc107 !important;">
         <div class="card-header bg-warning bg-opacity-25 text-dark py-3 border-0">
-            <h5 class="m-0 fw-bold">⏳ Ausstehende Bestätigungen (Tasdiqlash kutilmoqda)</h5>
+            <h5 class="m-0 fw-bold">⏳ Ausstehende Bestätigungen</h5>
         </div>
         <div class="table-responsive p-3 bg-white" style="border-radius: 0 0 20px 20px;">
             <table class="table table-hover align-middle mb-0">
@@ -40,8 +40,8 @@
                         <td class="fw-bold text-dark">{{ p_user.username }}</td>
                         <td>
                             <span class="badge bg-dark px-3 py-2 rounded-pill">
-                                {% if p_user.role == 'worker' %}Mitarbeiter (Ishchi)
-                                {% elif p_user.role == 'customer' %}Kunde (Mijoz)
+                                {% if p_user.role == 'worker' %}Mitarbeiter
+                                {% elif p_user.role == 'customer' %}Kunde
                                 {% elif p_user.role == 'buro' %}Büro
                                 {% else %}{{ p_user.role|title }}{% endif %}
                             </span>
@@ -111,7 +111,7 @@
                     <tr>
                         <td class="ps-4">
                             <div class="fw-bold text-dark">{{ customer.username }}</div>
-                            <small class="text-muted">Kunde (Mijoz)</small>
+                            <small class="text-muted">Kunde</small>
                         </td>
                         <td>
                             <span class="badge bg-warning bg-opacity-10 text-dark border border-warning px-3 py-2 rounded-pill">
@@ -143,9 +143,10 @@
 
     <div class="card border-0 shadow-sm" style="border-radius: 20px;">
         <div class="card-header bg-dark text-white py-3 border-0 d-flex align-items-center" style="border-radius: 20px 20px 0 0;">
-            <span class="fs-4 me-2">💀</span>
-            <h5 class="m-0 fw-bold">Inaktive Nutzer (Arhiv)</h5>
+            <span class="fs-4 me-2">📁</span>
+            <h5 class="m-0 fw-bold">Inaktive Nutzer (Archiv)</h5>
         </div>
+
         <div class="table-responsive p-0">
             <table class="table table-hover align-middle mb-0 opacity-75">
                 <thead class="bg-light text-muted small text-uppercase">

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Büro geschlossen | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 650px;">
+    <div class="card border-0 shadow-lg text-center overflow-hidden" style="border-radius: 25px;">
+        <div class="card-header border-0 py-4" style="background: linear-gradient(135deg, #1e293b, #334155); color: #fff;">
+            <div class="display-3 mb-2">🏢</div>
+            <h3 class="fw-bold mb-1 text-white">Das Büro ist derzeit geschlossen.</h3>
+            <p class="text-light opacity-75 small m-0">Auftragsannahme außerhalb der Geschäftszeiten pausiert</p>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <div class="alert alert-warning border-0 rounded-4 p-3 mb-4 shadow-sm">
+                <div class="d-flex align-items-center justify-content-center mb-1">
+                    <span class="fs-4 me-2">🕒</span>
+                    <strong class="fs-6">Unsere Büro-Öffnungszeiten:</strong>
+                </div>
+                <p class="m-0 fs-5 fw-bold text-dark">
+                    {{ buro_working_start|time:"H:i" }} bis {{ buro_working_end|time:"H:i" }} Uhr
+                </p>
+            </div>
+
+            <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+                Neue Bestellungen können nur während der regulären Bürozeiten aufgegeben werden. 
+                Bitte besuchen Sie uns während der Öffnungszeiten wieder.
+            </p>
+
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary px-4 py-2 fw-semibold" style="border-radius: 12px;">
+                    🏠 Startseite
+                </a>
+                <a href="{% url 'edit_profile' %}" class="btn btn-light px-4 py-2 fw-semibold border" style="border-radius: 12px;">
+                    👤 Mein Profil
+                </a>
+                <a href="{% url 'logout' %}" class="btn btn-danger px-4 py-2 fw-semibold" style="border-radius: 12px;">
+                    🚪 Abmelden
+                </a>
+            </div>
+        </div>
+        <div class="card-footer bg-light border-0 py-3 text-muted small">
+            Aktuelle Uhrzeit: <strong>{{ current_time|date:"H:i:s" }} Uhr</strong> (Asia/Tashkent)
+        </div>
+    </div>
+</div>
+{% endblock %}

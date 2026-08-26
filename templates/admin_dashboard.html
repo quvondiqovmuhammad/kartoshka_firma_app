@@ -14,9 +14,47 @@
         </div>
     </div>
 
+    <!-- Factory Settings Quick Overview -->
+    {% if factory_settings %}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; background: linear-gradient(135deg, #1e293b, #334155); color: #fff;">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center">
+                    <span class="fs-4 me-2">⚙️</span>
+                    <h6 class="fw-bold m-0 text-white">Fabrik-Kapazität & Parameter</h6>
+                </div>
+                <a href="{% url 'admin_factory_settings' %}" class="btn btn-warning btn-sm px-3 py-1 fw-bold" style="border-radius: 10px;">
+                    ✏️ Konfigurieren
+                </a>
+            </div>
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <div class="bg-white bg-opacity-10 p-2 rounded-3">
+                        <small class="text-light opacity-75 d-block" style="font-size: 0.75rem;">Stundenziel</small>
+                        <span class="fw-bold text-warning" style="font-size: 1rem;">{{ factory_settings.hourly_production_target_kg|floatformat:0 }} kg/h</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="bg-white bg-opacity-10 p-2 rounded-3">
+                        <small class="text-light opacity-75 d-block" style="font-size: 0.75rem;">24h-Tagesziel</small>
+                        <span class="fw-bold text-info" style="font-size: 1rem;">{{ factory_settings.daily_production_target_kg|floatformat:0 }} kg</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="bg-white bg-opacity-10 p-2 rounded-3">
+                        <small class="text-light opacity-75 d-block" style="font-size: 0.75rem;">Cut-off</small>
+                        <span class="fw-bold text-danger" style="font-size: 1rem;">{{ factory_settings.next_day_cutoff_time|time:"H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+
     <div class="row g-3 mb-5">
-        <div class="col-12">
-            <a href="{% url 'menu_create' %}" class="btn btn-success w-100 p-4 shadow-sm text-start position-relative overflow-hidden border-0" style="border-radius: 20px; background: linear-gradient(45deg, #198754, #20c997);">
+        <div class="col-12 col-md-6">
+            <a href="{% url 'menu_create' %}" class="btn btn-success w-100 p-4 shadow-sm text-start position-relative overflow-hidden border-0 h-100" style="border-radius: 20px; background: linear-gradient(45deg, #198754, #20c997);">
                 <div class="d-flex align-items-center">
                     <span class="fs-1 me-3">➕</span>
                     <div>
@@ -27,13 +65,13 @@
             </a>
         </div>
 
-        <div class="col-12">
-            <a href="{% url 'admin_lager' %}" class="btn btn-primary w-100 p-4 shadow-sm text-start border-0" style="border-radius: 20px; background: linear-gradient(45deg, #0d6efd, #0dcaf0);">
+        <div class="col-12 col-md-6">
+            <a href="{% url 'admin_lager' %}" class="btn btn-primary w-100 p-4 shadow-sm text-start border-0 h-100" style="border-radius: 20px; background: linear-gradient(45deg, #0d6efd, #0dcaf0);">
                 <div class="d-flex align-items-center">
                     <span class="fs-1 me-3">📦</span>
                     <div>
                         <h5 class="fw-bold m-0 text-white">Lagerverwaltung</h5>
-                        <small class="text-white-50">Ombor nazorati</small>
+                        <small class="text-white-50">Bestandsübersicht & Kontrolle</small>
                     </div>
                 </div>
             </a>
@@ -43,7 +81,8 @@
             <a href="{% url 'admin_orders' %}" class="card text-decoration-none border-0 shadow-sm h-100" style="border-radius: 20px;">
                 <div class="card-body text-center py-4">
                     <span class="fs-1 d-block mb-2">📋</span>
-                    <h6 class="fw-bold text-dark m-0 small">Bestellungen</h6>
+                    <h6 class="fw-bold text-dark m-0">Bestellungen</h6>
+                    <small class="text-muted" style="font-size: 0.75rem;">Alle Aufträge</small>
                 </div>
             </a>
         </div>
@@ -52,16 +91,20 @@
             <a href="{% url 'admin_users' %}" class="card text-decoration-none border-0 shadow-sm h-100" style="border-radius: 20px;">
                 <div class="card-body text-center py-4">
                     <span class="fs-1 d-block mb-2">👥</span>
-                    <h6 class="fw-bold text-dark m-0 small">Benutzer</h6>
+                    <h6 class="fw-bold text-dark m-0">Benutzer</h6>
+                    <small class="text-muted" style="font-size: 0.75rem;">Personal & Kunden</small>
                 </div>
             </a>
         </div>
     </div>
 
+
+
     <div class="d-flex align-items-center mb-3">
         <span class="fs-4 me-2">🍟</span>
-        <h4 class="fw-bold m-0 fs-5">Produktsorten (Menu)</h4>
+        <h4 class="fw-bold m-0 fs-5">Produktsorten</h4>
     </div>
+
 
     <div class="row g-3">
         {% for item in menu_items %}

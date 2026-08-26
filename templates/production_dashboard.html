@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}Produktions-Dashboard | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="container pb-5 mt-3">
+
+    <!-- Active Shift & Status Bar -->
+    <div class="card border-0 shadow-sm mb-3" style="border-radius: 16px; background: {% if active_shift %}#e8f5e9{% else %}#fff3e0{% endif %};">
+        <div class="card-body d-flex justify-content-between align-items-center py-2 px-3">
+            {% if active_shift %}
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success rounded-pill px-2 py-1" style="font-size: 0.75rem;">🟢 Schicht aktiv</span>
+                    <span class="fw-bold text-dark small">Gestartet: {{ active_shift.start_time|date:"H:i" }} Uhr</span>
+                </div>
+                <form method="POST" action="{% url 'end_shift' %}" onsubmit="return confirm('Möchten Sie die Schicht wirklich beenden?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm fw-bold rounded-pill px-3 shadow-sm">
+                        ⏹ Beenden
+                    </button>
+                </form>
+            {% else %}
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.75rem;">⏸ Inaktiv</span>
+                    <span class="fw-bold text-muted small">Keine aktive Schicht</span>
+                </div>
+                <form method="POST" action="{% url 'start_shift' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm fw-bold rounded-pill px-3 shadow-sm">
+                        ▶ Schicht starten
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Header & Parameters -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="fw-bold m-0 text-dark">🏭 Produktions-Warteschlange</h3>
+            <p class="text-muted small mb-0">Stündliche Aufgaben & Rückwärtsterminierung (Backward Scheduling)</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'worker_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold">
+                📦 Einzelansicht
+            </a>
+            <a href="{% url 'production_dashboard' %}" class="btn btn-light border btn-sm rounded-pill px-3 fw-bold shadow-sm" title="Aktualisieren">
+                🔄 Aktualisieren
+            </a>
+        </div>
+    </div>
+
+    <!-- Info Pill Banner -->
+    <div class="alert alert-light border shadow-sm py-2 px-3 mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2" style="border-radius: 14px;">
+        <div class="small text-muted">
+            ⚙️ <strong>Linienkapazität:</strong> <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">{{ factory_settings.palettes_per_hour }} Paletten/h</span> &bull; 
+            <strong>Gewicht/Palette:</strong> <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">{{ factory_settings.kg_per_palette }} kg</span> &bull; 
+            <strong>Stundenziel:</strong> <span class="badge bg-dark text-white rounded-pill">{{ factory_settings.hourly_production_target_kg|floatformat:0 }} kg/h</span>
+            {% if is_after_cutoff %}
+            &bull; <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill">🌙 Abendschicht: Heute + Morgen sichtbar</span>
+            {% endif %}
+        </div>
+        <div class="small fw-semibold text-secondary">
+            📋 Geplante Aufgaben: <strong>{{ hourly_tasks|length }}</strong>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm py-2" role="alert" style="border-radius: 10px; font-size: 0.85rem;">
+                {{ message }}
+                <button type="button" class="btn-close" style="padding: 0.8rem;" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if current_task %}
+        <!-- 🔴 TOP HIGHLIGHT: AKTUELLE AUFGABE -->
+        <div class="mb-4">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge bg-danger text-white rounded-pill px-3 py-1 text-uppercase fw-bold" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                    ⚡ Aktuelle Aufgabe
+                </span>
+                <span class="text-muted small">Jetzt in Bearbeitung</span>
+            </div>
+
+            <div class="card border-0 shadow-lg text-white" style="border-radius: 20px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                        <div>
+                            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold mb-2">
+                                🕒 {{ current_task.time_slot }} Uhr
+                            </span>
+                            <h2 class="fw-bold mb-1">
+                                {{ current_task.palettes }} Paletten <span class="fs-4 fw-normal text-white-50">({{ current_task.quantity_kg }} kg)</span>
+                            </h2>
+                            <p class="text-light mb-0 small opacity-75">
+                                🥔 {{ current_task.product_summary }}
+                            </p>
+                        </div>
+
+                        <div class="text-end">
+                            <span class="badge bg-light text-primary px-3 py-1 rounded-pill fw-bold" style="font-size: 0.85rem;">
+                                Abholung: {{ current_task.pickup_time_str }} Uhr
+                            </span>
+                            <div class="mt-2 small text-white-50">
+                                Teil {{ current_task.chunk_index }} von {{ current_task.total_chunks }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-light opacity-25 my-3">
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="small">
+                            <strong>Auftrag:</strong> #{{ current_task.order_id }} &bull; 
+                            <strong>Kunde:</strong> {{ current_task.customer_name }}
+                        </div>
+                        <div>
+                            <a href="{% url 'worker_dashboard' %}" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm text-dark">
+                                🏭 Produktion erfassen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🟡 UPCOMING TASKS: ANSTEHENDE AUFGABEN -->
+        {% if upcoming_tasks %}
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark m-0">
+                        ⏳ Anstehende Aufgaben <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">{{ upcoming_tasks|length }}</span>
+                    </h5>
+                    <span class="text-muted small">Chronologisch sortiert nach Produktionsstunde</span>
+                </div>
+
+                <div class="list-group gap-2">
+                    {% for task in upcoming_tasks %}
+                        <div class="list-group-item border-0 shadow-sm p-3 card-hover" style="border-radius: 16px; background: #ffffff;">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-light text-primary rounded-4 p-2 text-center" style="min-width: 80px;">
+                                        <div class="fw-bold font-monospace" style="font-size: 0.95rem;">{{ task.start_time_str }}</div>
+                                        <div class="text-muted small" style="font-size: 0.75rem;">bis {{ task.end_time_str }}</div>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1">
+                                            {{ task.palettes }} Paletten <span class="text-muted fw-normal">({{ task.quantity_kg }} kg)</span>
+                                        </h6>
+                                        <div class="small text-muted">
+                                            🥔 {{ task.product_summary }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-end">
+                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-1 small">
+                                        🚚 Abholung: {{ task.pickup_time_str }} Uhr
+                                    </span>
+                                    <div class="small text-muted mt-1">
+                                        Auftrag #{{ task.order_id }} (Teil {{ task.chunk_index }}/{{ task.total_chunks }})
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <!-- EMPTY STATE -->
+        <div class="card border-0 shadow-sm text-center py-5 px-3 my-4" style="border-radius: 20px; background: #ffffff;">
+            <div class="card-body">
+                <div class="display-4 mb-3">🎉</div>
+                <h4 class="fw-bold text-dark mb-2">Alle Produktionsaufgaben abgeschlossen!</h4>
+                <p class="text-muted small mx-auto" style="max-width: 400px;">
+                    Derzeit befinden sich keine offenen Aufträge in der Produktions-Warteschlange.
+                </p>
+                <a href="{% url 'worker_dashboard' %}" class="btn btn-outline-primary rounded-pill px-4 fw-bold btn-sm mt-2">
+                    📦 Zurück zur Produktübersicht
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+
+<style>
+    body {
+        background-color: #f4f7f6;
+    }
+    .card-hover {
+        transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08) !important;
+    }
+</style>
+{% endblock %}

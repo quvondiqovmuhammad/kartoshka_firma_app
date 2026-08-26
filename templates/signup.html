@@ -15,15 +15,10 @@
 
                 {% if error %}
                     <div class="alert alert-danger py-2 small text-center" style="border-radius: 10px;">
-                        {% if "allaqachon mavjud" in error or "existiert bereits" in error %}
-                            Benutzername existiert bereits.
-                        {% elif "allaqachon ishlatilgan" in error or "bereits verwendet" in error %}
-                            Diese E-Mail wird bereits verwendet.
-                        {% else %}
-                            {{ error }}
-                        {% endif %}
+                        {{ error }}
                     </div>
                 {% endif %}
+
 
                 <form method="post">
                     {% csrf_token %}

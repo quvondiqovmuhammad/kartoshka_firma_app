@@ -65,17 +65,10 @@
 
         {% if error %}
             <div class="alert alert-danger py-2 small text-center" style="border-radius: 10px;">
-                {% if error == "Bunday username mavjud emas" %}
-                    Benutzername existiert nicht
-                {% elif error == "Parol noto‘g‘ri" or error == "Parol noto'g'ri" %}
-                    Ungültiges Passwort
-                {% elif error == "Profilingiz hali admin tomonidan tasdiqlanmagan." %}
-                    Ihr Profil wurde noch nicht vom Administrator bestätigt.
-                {% else %}
-                    {{ error }}
-                {% endif %}
+                {{ error }}
             </div>
         {% endif %}
+
 
         <form method="post">
             {% csrf_token %}

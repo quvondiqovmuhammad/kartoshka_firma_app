@@ -11,7 +11,7 @@ SECRET_KEY = 'django-insecure-+k&n=-dmv*k7lqq7y+)hfm&i2w*gjzl+hq#w4al=)2fz46vcy8
 DEBUG = True
 
 # PythonAnywhere manzilingizni qo'shdik
-ALLOWED_HOSTS = ['700m007.pythonanywhere.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -73,10 +73,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'de'
+TIME_ZONE = 'Asia/Tashkent'
 USE_I18N = True
 USE_TZ = True
+
+
 
 
 STATIC_URL = '/static/'
@@ -113,12 +115,21 @@ PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static', 'js', 'serviceworker.
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost',
     'https://localhost',
-    'https://700m007.pythonanywhere.com',  # O'zingizni PythonAnywhere manzilingizni yozing
+    'https://700m007.pythonanywhere.com', 
+    'http://10.61.142.24',
 ]
+
+# Fast password hasher for test suite acceleration
+import sys
+if 'test' in sys.argv:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
+
 
 # Cookie sozlamalari (mobil ilova uchun juda muhim)
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SECURE = True  # Agar HTTPS ishlatsangiz (PythonAnywhere'da shunday)
+CSRF_COOKIE_SECURE = False  # Agar HTTPS ishlatsangiz (PythonAnywhere'da shunday)
 

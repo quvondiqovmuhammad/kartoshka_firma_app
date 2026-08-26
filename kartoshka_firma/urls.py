@@ -8,9 +8,9 @@ from django.conf import settings
 from operations.views import (
     HomeView, SignupHTMLView, LoginHTMLView, logout_view, EditProfileView,
     AdminDashboardView, AllUsersView, AdminOrderListView, approve_user, reject_user,
-    activate_worker, deactivate_worker, lager_view,
+    activate_worker, deactivate_worker, lager_view, FactorySettingsUpdateView,
     MenuCreateView, MenuUpdateView,
-    WorkerDashboardView, start_shift, end_shift, shift_history_view, worker_produce,
+    WorkerDashboardView, ProductionDashboardView, start_shift, end_shift, shift_history_view, worker_produce,
     CustomerDashboardView, CustomerOrdersView, CreateOrderHTMLView, AddItemsToOrderView, cancel_order_item,
     asset_links, delete_menu_item
 )
@@ -30,6 +30,7 @@ urlpatterns = [
 
     # --- ADMIN ---
     path('dashboard/admin/', AdminDashboardView.as_view(), name='admin_dashboard'),
+    path('dashboard/admin/settings/', FactorySettingsUpdateView.as_view(), name='admin_factory_settings'),
     path('dashboard/admin/users/', AllUsersView.as_view(), name='admin_users'),
     path('dashboard/admin/orders/', AdminOrderListView.as_view(), name='admin_orders'),
 
@@ -47,9 +48,12 @@ urlpatterns = [
     # Ombor (Lager) - Faqat ko'rish uchun (Limitlar yo'q)
     path('admin-dashboard/lager/', lager_view, name='admin_lager'),
 
-    # --- WORKER (ISHCHI) ---
+
+    # --- WORKER & PRODUCTION ---
     path('dashboard/worker/', WorkerDashboardView.as_view(), name='worker_dashboard'),
+    path('dashboard/production/', ProductionDashboardView.as_view(), name='production_dashboard'),
     path('dashboard/worker/produce/', worker_produce, name='worker_produce'), # ✅ YANGI (Fertig tugmasi uchun)
+
 
     path('start-shift/', start_shift, name='start_shift'),
     path('end-shift/', end_shift, name='end_shift'),

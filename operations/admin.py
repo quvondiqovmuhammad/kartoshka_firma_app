@@ -72,3 +72,46 @@ class LagerAdmin(admin.ModelAdmin):
 
     # Admin panelda Lager obyektini tahrirlashda (Detail view) ko'rinadigan maydonlar
     fields = ('menu_item', 'current_stock')
+
+
+from .models import FactorySettings
+
+@admin.register(FactorySettings)
+class FactorySettingsAdmin(admin.ModelAdmin):
+    list_display = (
+        '__str__',
+        'palettes_per_hour',
+        'kg_per_palette',
+        'get_hourly_target_kg',
+        'get_daily_target_kg',
+        'next_day_cutoff_time',
+        'updated_at'
+    )
+    fieldsets = (
+        ('Produktionskapazität (Paletten & Gewicht)', {
+            'fields': ('palettes_per_hour', 'kg_per_palette')
+        }),
+        ('Arbeitszeiten & Schichtzeiten', {
+            'fields': (
+                ('buro_working_start', 'buro_working_end'),
+                ('production_working_start', 'production_working_end'),
+                'next_day_cutoff_time'
+            )
+        }),
+    )
+
+    @admin.display(description="Stundenziel (kg/h)")
+    def get_hourly_target_kg(self, obj):
+        return f"{obj.hourly_production_target_kg:.0f} kg/h"
+
+    @admin.display(description="24h-Tagesziel (kg)")
+    def get_daily_target_kg(self, obj):
+        return f"{obj.daily_production_target_kg:.0f} kg"
+
+    def has_add_permission(self, request):
+        return not FactorySettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+

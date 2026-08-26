@@ -60,6 +60,11 @@
             <a class="navbar-brand fw-bold" href="/">Kartoffelfirma</a>
 
             <div class="d-flex align-items-center">
+                <!-- Live Timezone Clock -->
+                <div class="d-flex align-items-center me-2 me-md-3 bg-white px-2 py-1 rounded-3 shadow-sm" style="font-size: 0.85rem; border: 1px solid rgba(0,0,0,0.1);" title="Uhrzeit (Taschkent)">
+                    <span id="live-clock" class="fw-bold font-monospace text-dark" style="color: #212529 !important; letter-spacing: 0.5px;">--:--:--</span>
+                </div>
+
                 {% if user.is_authenticated %}
                     {% if user.role == 'admin' and request.resolver_match.url_name != 'admin_dashboard' %}
                         <a class="btn btn-light btn-sm me-2 text-primary fw-bold" href="{% url 'admin_dashboard' %}">🏠</a>
@@ -97,5 +102,28 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Live Timezone Clock (Asia/Tashkent)
+        function updateLiveClock() {
+            try {
+                const now = new Date();
+                const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: 'Asia/Tashkent',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                const clockEl = document.getElementById('live-clock');
+                if (clockEl) {
+                    clockEl.textContent = timeFormatter.format(now);
+                }
+            } catch (e) {
+                console.error("Clock update error:", e);
+            }
+        }
+        setInterval(updateLiveClock, 1000);
+        updateLiveClock();
+    </script>
 </body>
 </html>

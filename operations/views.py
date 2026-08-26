@@ -1,14 +1,18 @@
+import datetime
 from django.urls import reverse_lazy
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from .forms import MenuItemForm
-from .models import CustomUser, MenuItem, Order, OrderItem,Shift, ShiftReport, Lager
+from .models import CustomUser, MenuItem, Order, OrderItem, Shift, ShiftReport, Lager, FactorySettings
+from . import capacity_planner
 from .serializers import MenuItemSerializer, SignupSerializer, OrderSerializer
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import authenticate, login,logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -24,6 +28,9 @@ from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
+from .services import get_production_tasks, split_order_into_hourly_chunks, get_hourly_availability
+
+
 
 
 
@@ -53,36 +60,36 @@ class SignupHTMLView(View):
         admin_count = CustomUser.objects.filter(role='admin').count()
         admin_limit_reached = admin_count >= 4
 
-        # 🔒 Admin sonini cheklash
+        # 🔒 Admin-Limitierung
         if role == 'admin' and admin_limit_reached:
             return render(request, 'signup.html', {
-                'error': '❌ Faqat 4 ta admin roli bo‘lishi mumkin.',
+                'error': '❌ Es dürfen maximal 4 Administratoren existieren.',
                 'admin_limit_reached': True
             })
 
-        # ❗ Bo‘sh maydonlarni tekshiramiz
+        # ❗ Pflichtfelder prüfen
         if not all([username, password, first_name, last_name, email]):
             return render(request, 'signup.html', {
-                'error': 'Barcha maydonlarni to‘ldiring',
+                'error': 'Bitte füllen Sie alle Pflichtfelder aus.',
                 'admin_limit_reached': admin_limit_reached
             })
 
-        # ❌ Username mavjudligini tekshiramiz
+        # ❌ Benutzername-Prüfung
         if CustomUser.objects.filter(username=username).exists():
             return render(request, 'signup.html', {
-                'error': f"Username '{username}' allaqachon mavjud.",
+                'error': f"Der Benutzername '{username}' ist bereits vergeben.",
                 'admin_limit_reached': admin_limit_reached
             })
 
-        # ❌ Email mavjudligini tekshiramiz
+        # ❌ E-Mail-Prüfung
         if CustomUser.objects.filter(email=email).exists():
             return render(request, 'signup.html', {
-                'error': f"E-mail '{email}' allaqachon ishlatilgan.",
+                'error': f"Die E-Mail-Adresse '{email}' wird bereits verwendet.",
                 'admin_limit_reached': admin_limit_reached
             })
         is_approved = True if role == 'admin' else False
 
-        # ✅ Foydalanuvchini yaratamiz
+        # ✅ Benutzer anlegen
         CustomUser.objects.create(
             username=username,
             password=make_password(password),
@@ -97,13 +104,13 @@ class SignupHTMLView(View):
 
 
 # 🔴 2. API uchun JSON POST view
-@method_decorator(csrf_exempt, name='dispatch')  # API uchun CSRF ni o‘chiradi
+@method_decorator(csrf_exempt, name='dispatch')
 class SignupAPIView(APIView):
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Foydalanuvchi yaratildi'}, status=status.HTTP_201_CREATED)
+            return Response({'message': 'Benutzer erfolgreich erstellt'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -115,25 +122,25 @@ class LoginHTMLView(View):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
-        # Avval username mavjudligini tekshiramiz
+        # Benutzer existiert?
         if not CustomUser.objects.filter(username=username).exists():
-            return render(request, 'login.html', {'error': 'Bunday username mavjud emas'})
+            return render(request, 'login.html', {'error': 'Benutzername nicht gefunden'})
 
-        # Username mavjud, parolni tekshiramiz
+        # Passwort prüfen
         user = authenticate(request, username=username, password=password)
         if user is None:
-            return render(request, 'login.html', {'error': 'Parol noto‘g‘ri'})
+            return render(request, 'login.html', {'error': 'Ungültiges Passwort'})
 
-        # ✅ Admin tasdiqlaganini tekshiramiz
+        # ✅ Admin-Freischaltung prüfen
         if not user.is_approved:
             return render(request, 'login.html', {
-                'error': 'Profilingiz hali admin tomonidan tasdiqlanmagan.'
+                'error': 'Ihr Profil wurde noch nicht vom Administrator freigeschaltet.'
             })
 
-        # Tizimga kiritish
+        # Einloggen
         login(request, user)
 
-        # Role asosida yo‘naltirish
+        # Weiterleitung basierend auf Rolle
         if user.role == 'admin':
             return redirect('admin_dashboard')
         elif user.role == 'worker':
@@ -148,13 +155,14 @@ class LoginHTMLView(View):
 @login_required
 def approve_user(request, user_id):
     if request.user.role != 'admin':
-        return HttpResponseForbidden("Faqat admin foydalanuvchi tasdiqlashi mumkin.")
+        return HttpResponseForbidden("Nur Administratoren können Benutzer freischalten.")
 
     user_to_approve = get_object_or_404(CustomUser, id=user_id)
     user_to_approve.is_approved = True
     user_to_approve.save()
 
-    return redirect('admin_users')  # foydalanuvchilar ro‘yxati sahifasiga qaytarish
+    return redirect('admin_users')
+
 
 def reject_user(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id)
@@ -201,10 +209,44 @@ class EditProfileView(View):
         password = request.POST.get('password')
         if password:
             user.set_password(password)  # faqat parol bo‘lsa yangilanadi
+            update_session_auth_hash(request, user)
 
         user.save()
-        return redirect('edit_profile')
+        messages.success(request, "Profil erfolgreich aktualisiert!")
 
+        # Route user back to their respective main dashboard/home page
+        if user.role == 'admin':
+            return redirect('admin_dashboard')
+        elif user.role == 'worker':
+            return redirect('worker_dashboard')
+        elif user.role in ['customer', 'buro']:
+            return redirect('customer_dashboard')
+        return redirect('home')
+
+
+
+
+class BuroWorkingHoursMixin:
+    """
+    Restricts GET access to customer/Büro views outside of configured Büro working hours.
+    POST requests are always permitted so in-flight orders are never interrupted.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        settings = FactorySettings.get_settings()
+        current_time = timezone.localtime().time()
+
+        if not capacity_planner.is_within_buro_hours(current_time, settings=settings):
+            if request.method == 'POST':
+                return super().dispatch(request, *args, **kwargs)
+
+            return render(request, 'out_of_hours.html', {
+                'settings': settings,
+                'buro_working_start': settings.buro_working_start,
+                'buro_working_end': settings.buro_working_end,
+                'current_time': timezone.localtime(),
+            })
+
+        return super().dispatch(request, *args, **kwargs)
 
 
 class RoleRequiredMixin(LoginRequiredMixin):
@@ -216,6 +258,7 @@ class RoleRequiredMixin(LoginRequiredMixin):
         if request.user.role not in self.allowed_roles:
             return redirect('home')
         return super().dispatch(request, *args, **kwargs)
+
 
 
 class MenuListView(APIView):
@@ -278,6 +321,10 @@ class ProductOrderStatsView(APIView):
         return Response(stats)
 
 
+from .forms import MenuItemForm, FactorySettingsForm
+from .models import CustomUser, MenuItem, Order, OrderItem, Shift, ShiftReport, Lager, FactorySettings
+
+
 class AdminDashboardView(RoleRequiredMixin, TemplateView):
     template_name = 'admin_dashboard.html'
     allowed_roles = ['admin']
@@ -286,7 +333,40 @@ class AdminDashboardView(RoleRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         # Barcha mahsulotlarni ombor holati bilan birga yuboramiz
         context['menu_items'] = MenuItem.objects.all().order_by('name')
+        settings = FactorySettings.get_settings()
+        context['factory_settings'] = settings
+        context['settings_form'] = FactorySettingsForm(instance=settings)
         return context
+
+
+class FactorySettingsUpdateView(RoleRequiredMixin, View):
+    allowed_roles = ['admin']
+
+    def get(self, request):
+        settings = FactorySettings.get_settings()
+        form = FactorySettingsForm(instance=settings)
+        return render(request, 'admin_settings.html', {
+            'form': form,
+            'settings': settings
+        })
+
+    def post(self, request):
+        settings = FactorySettings.get_settings()
+        form = FactorySettingsForm(request.POST, instance=settings)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "✅ Fabrikeinstellungen wurden erfolgreich aktualisiert!")
+            next_url = request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
+            return redirect('admin_factory_settings')
+        else:
+            messages.error(request, "⚠️ Fehler beim Speichern der Fabrikeinstellungen. Bitte überprüfen Sie die Eingaben.")
+            return render(request, 'admin_settings.html', {
+                'form': form,
+                'settings': settings
+            })
+
 
 class AdminOrderListView(LoginRequiredMixin, View):
     def get(self, request):
@@ -388,13 +468,61 @@ def delete_menu_item(request, pk):
     # O'chirish
     menu_item.delete()
 
-    messages.success(request, f"✅ {menu_item.name} muvaffaqiyatli o'chirildi.")
+    messages.success(request, f"✅ {menu_item.name} wurde erfolgreich gelöscht.")
     return redirect('admin_dashboard')
+
+
+
+class ProductionDashboardView(RoleRequiredMixin, TemplateView):
+    template_name = 'production_dashboard.html'
+    allowed_roles = ['worker', 'admin', 'buro']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        settings = FactorySettings.get_settings()
+
+        now = timezone.now()
+        if timezone.is_aware(now):
+            current_time = timezone.localtime(now).time()
+            today = timezone.localtime(now).date()
+        else:
+            current_time = now.time()
+            today = now.date()
+
+        tomorrow = today + datetime.timedelta(days=1)
+        cutoff = getattr(settings, 'cut_off_time', None) or getattr(settings, 'next_day_cutoff_time', None) or datetime.time(22, 0)
+
+        # If current time is >= cut_off_time, also fetch and display tomorrow's scheduled chunks
+        if current_time >= cutoff:
+            target_dates = [today, tomorrow]
+        else:
+            target_dates = [today]
+
+        hourly_tasks = get_production_tasks(target_dates=target_dates, settings=settings)
+
+        active_shift = None
+        if self.request.user.is_authenticated:
+            active_shift = Shift.objects.filter(worker=self.request.user, is_active=True).last()
+
+        current_task = hourly_tasks[0] if hourly_tasks else None
+        upcoming_tasks = hourly_tasks[1:] if len(hourly_tasks) > 1 else []
+
+        context['hourly_tasks'] = hourly_tasks
+        context['current_task'] = current_task
+        context['upcoming_tasks'] = upcoming_tasks
+        context['factory_settings'] = settings
+        context['active_shift'] = active_shift
+        context['target_dates'] = target_dates
+        context['today'] = today
+        context['tomorrow'] = tomorrow
+        context['is_after_cutoff'] = (current_time >= cutoff)
+        return context
 
 
 class WorkerDashboardView(RoleRequiredMixin, TemplateView):
     template_name = 'worker_dashboard.html'
     allowed_roles = ['worker', 'admin', 'buro']
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -547,7 +675,7 @@ def cancel_order_item(request, item_id):
 
 
 
-class CustomerDashboardView(RoleRequiredMixin, TemplateView):
+class CustomerDashboardView(BuroWorkingHoursMixin, RoleRequiredMixin, TemplateView):
     template_name = 'customer_dashboard.html'
     allowed_roles = ['customer', 'admin', 'buro']
 
@@ -565,7 +693,7 @@ class CustomerDashboardView(RoleRequiredMixin, TemplateView):
 
         return context
 
-class CreateOrderHTMLView(LoginRequiredMixin, View):
+class CreateOrderHTMLView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
     def post(self, request):
         # Faqat order yaratamiz (bo‘sh holda)
         order = Order.objects.create(user=request.user)
@@ -574,89 +702,171 @@ class CreateOrderHTMLView(LoginRequiredMixin, View):
         return redirect('add_items_to_order', order_id=order.id)
 
 
-class AddItemsToOrderView(LoginRequiredMixin, View):
+from . import capacity_planner
+
+
+class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
+
+    def _get_capacity_context(self, settings=None):
+        if settings is None:
+            settings = FactorySettings.get_settings()
+        target_date = capacity_planner.determine_target_production_date(settings=settings)
+        hourly_target_kg = capacity_planner.get_hourly_production_target_kg(settings=settings)
+        daily_target_kg = capacity_planner.get_daily_production_target_kg(settings=settings)
+        scheduled_kg = capacity_planner.get_scheduled_production_kg(target_date)
+        remaining_capacity_kg = capacity_planner.get_remaining_daily_capacity_kg(target_date, settings=settings)
+        utilization_percent = round((scheduled_kg / daily_target_kg * 100.0), 1) if daily_target_kg > 0 else 0
+        cutoff_time = capacity_planner.get_cutoff_time(settings=settings)
+        is_after_cutoff = (timezone.localtime().time() >= cutoff_time)
+        hourly_availability = get_hourly_availability(target_date=target_date, settings=settings)
+
+        return {
+            'factory_settings': settings,
+            'target_date': target_date,
+            'hourly_target_kg': hourly_target_kg,
+            'daily_target_kg': daily_target_kg,
+            'scheduled_kg': scheduled_kg,
+            'remaining_capacity_kg': remaining_capacity_kg,
+            'utilization_percent': utilization_percent,
+            'cutoff_time': cutoff_time,
+            'is_after_cutoff': is_after_cutoff,
+            'hourly_availability': hourly_availability,
+        }
+
+
     # GET: Miqdor kiritish sahifasini ochish
     def get(self, request, order_id):
         order = get_object_or_404(Order, id=order_id, user=request.user)
         menu_items = MenuItem.objects.filter(verfügbar=True)
-        return render(request, 'add_items.html', {
+        context = {
             'order': order,
-            'menu_items': menu_items
-        })
+            'menu_items': menu_items,
+            **self._get_capacity_context()
+        }
+        return render(request, 'add_items.html', context)
 
     # POST: Miqdorlarni saqlash va hisoblash
     def post(self, request, order_id):
         order = get_object_or_404(Order, id=order_id, user=request.user)
         item_ids = request.POST.getlist('items')
 
+        # Optional pickup time update
+        pickup_time_str = request.POST.get('pickup_time')
+        if pickup_time_str:
+            try:
+                parts = pickup_time_str.strip().split(':')
+                order.pickup_time = datetime.time(int(parts[0]), int(parts[1]))
+                order.save(update_fields=['pickup_time'])
+            except (ValueError, IndexError):
+                pass
+
+
         if not item_ids:
             order.delete()
             messages.error(request, "Bitte wählen Sie mindestens ein Produkt aus.")
             return redirect('customer_dashboard')
 
+        settings = FactorySettings.get_settings()
+        parsed_items = []
+        total_production_needed_kg = 0
+
+        for item_id in item_ids:
+            try:
+                menu_item = MenuItem.objects.get(id=item_id)
+                quantity_str = request.POST.get(f'quantity_{item_id}', '0')
+                quantity = int(float(quantity_str)) if quantity_str else 0
+
+                if quantity <= 0:
+                    continue
+
+                lager, _ = Lager.objects.get_or_create(menu_item=menu_item)
+                stock_qty = lager.current_stock
+                production_needed = max(0, quantity - stock_qty)
+
+                parsed_items.append({
+                    'menu_item': menu_item,
+                    'quantity': quantity,
+                    'lager': lager,
+                    'stock_qty': stock_qty,
+                    'production_needed': production_needed
+                })
+                total_production_needed_kg += production_needed
+            except (MenuItem.DoesNotExist, ValueError):
+                continue
+
+        if not parsed_items:
+            order.delete()
+            messages.error(request, "Bitte wählen Sie mindestens ein Produkt mit einer gültigen Menge aus.")
+            return redirect('customer_dashboard')
+
+        # ✅ KAPAZITÄTSPRÜFUNG DURCHFÜHREN
+        if total_production_needed_kg > 0:
+            capacity_check = capacity_planner.check_order_capacity(total_production_needed_kg, settings=settings)
+            if not capacity_check['is_feasible']:
+                messages.error(request, f"⚠️ {capacity_check['message']}")
+                menu_items = MenuItem.objects.filter(verfügbar=True)
+                context = {
+                    'order': order,
+                    'menu_items': menu_items,
+                    'capacity_error': capacity_check,
+                    **self._get_capacity_context(settings)
+                }
+                return render(request, 'add_items.html', context)
+
+        # ✅ AUSFÜHRUNG & BESTELLUNG SPEICHERN
         with transaction.atomic():
             has_items = False
-            for item_id in item_ids:
-                try:
-                    menu_item = MenuItem.objects.get(id=item_id)
-                    quantity_str = request.POST.get(f'quantity_{item_id}', '0')
-                    quantity = int(float(quantity_str)) if quantity_str else 0
+            for item in parsed_items:
+                menu_item = item['menu_item']
+                quantity = item['quantity']
+                lager = item['lager']
 
-                    if quantity <= 0:
-                        continue
+                if lager.current_stock >= quantity:
+                    # Omborda yetarli
+                    lager.current_stock -= quantity
+                    lager.save()
+                    OrderItem.objects.create(
+                        order=order, menu_item=menu_item,
+                        quantity=quantity, status='completed'
+                    )
+                elif lager.current_stock > 0:
+                    # Omborda bir qismi bor
+                    stock_qty = lager.current_stock
+                    production_qty = quantity - stock_qty
+                    lager.current_stock = 0
+                    lager.save()
 
-                    lager, _ = Lager.objects.get_or_create(menu_item=menu_item)
-
-                    if lager.current_stock >= quantity:
-                        # Omborda yetarli
-                        lager.current_stock -= quantity
-                        lager.save()
-                        OrderItem.objects.create(
-                            order=order, menu_item=menu_item,
-                            quantity=quantity, status='completed'
-                        )
-                    elif lager.current_stock > 0:
-                        # Omborda bir qismi bor
-                        stock_qty = lager.current_stock
-                        production_qty = quantity - stock_qty
-                        lager.current_stock = 0
-                        lager.save()
-
-                        OrderItem.objects.create(
-                            order=order, menu_item=menu_item,
-                            quantity=stock_qty, status='completed'
-                        )
-                        OrderItem.objects.create(
-                            order=order, menu_item=menu_item,
-                            quantity=production_qty, status='pending'
-                        )
-                    else:
-                        # Omborda yo'q
-                        OrderItem.objects.create(
-                            order=order, menu_item=menu_item,
-                            quantity=quantity, status='pending'
-                        )
-                    has_items = True
-                except (MenuItem.DoesNotExist, ValueError):
-                    continue
+                    OrderItem.objects.create(
+                        order=order, menu_item=menu_item,
+                        quantity=stock_qty, status='completed'
+                    )
+                    OrderItem.objects.create(
+                        order=order, menu_item=menu_item,
+                        quantity=production_qty, status='pending'
+                    )
+                else:
+                    # Omborda yo'q
+                    OrderItem.objects.create(
+                        order=order, menu_item=menu_item,
+                        quantity=quantity, status='pending'
+                    )
+                has_items = True
 
             # Buyurtma holatini yangilash
             if has_items:
-                # 'orderitem_set' orqali xatolikni oldini olamiz
                 if not order.orderitem_set.filter(status='pending').exists():
                     order.status = 'completed'
                 else:
                     order.status = 'pending'
                 order.save()
                 messages.success(request, "Bestellung erfolgreich verarbeitet!")
-
-                # MANA BU YER: Muvaffaqiyatli zakazdan keyin 'Orders' sahifasiga qaytadi
                 return redirect('customer_orders')
             else:
                 order.delete()
                 return redirect('customer_dashboard')
 
-class CustomerOrdersView(LoginRequiredMixin, View):
+
+class CustomerOrdersView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
     def get(self, request):
         orders = Order.objects.filter(user=request.user).order_by('-created_at')
 
@@ -667,6 +877,7 @@ class CustomerOrdersView(LoginRequiredMixin, View):
                 order.save()
 
         return render(request, 'customer_orders.html', {'orders': orders})
+
 
 
 

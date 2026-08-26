@@ -2,15 +2,152 @@
 {% block title %}Bestellung aufgeben | Kartoffelfirma{% endblock %}
 
 {% block content %}
-<div class="container pb-5">
-    <div class="d-flex align-items-center mb-4">
-        <h2 class="fw-bold m-0" style="font-size: 1.5rem;">🧾 Bestellung aufgeben</h2>
+<div class="container pb-5" style="max-width: 850px;">
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm border-0 mb-4" style="border-radius: 15px;" role="alert">
+                <strong>{{ message }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="fw-bold m-0" style="font-size: 1.5rem;">🧾 Bestellung aufgeben</h2>
+            <p class="text-muted small m-0">Wählen Sie Sorten und Mengen für Ihren Auftrag</p>
+        </div>
+        <a href="{% url 'customer_orders' %}" class="btn btn-outline-secondary btn-sm px-3 py-2 fw-semibold" style="border-radius: 12px;">
+            ⬅️ Zurück
+        </a>
     </div>
 
+    <!-- Live Capacity & Delivery Date Banner -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; background: linear-gradient(135deg, #1e293b, #334155); color: #fff;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center mb-2 mb-md-0">
+                    <span class="fs-3 me-2">📅</span>
+                    <div>
+                        <small class="text-light opacity-75 d-block">Geplanter Produktionstag / Liefertermin</small>
+                        <h5 class="fw-bold m-0 text-white">{{ target_date|date:"l, d.m.Y" }}</h5>
+                    </div>
+                </div>
+                <div>
+                    {% if is_after_cutoff %}
+                        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
+                            ⏰ Nach Cut-off ({{ cutoff_time|time:"H:i" }} Uhr) &rarr; Folgetag
+                        </span>
+                    {% else %}
+                        <span class="badge bg-success text-white px-3 py-2 rounded-pill fw-bold">
+                            ✅ Vor Cut-off ({{ cutoff_time|time:"H:i" }} Uhr)
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row g-2 text-center my-2">
+                <div class="col-6 col-md-4">
+                    <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                        <small class="text-light opacity-75 d-block">Verfügbare Kapazität (24h)</small>
+                        <span class="fs-5 fw-bold text-warning">{{ remaining_capacity_kg|floatformat:0 }} kg</span>
+                        <div class="small opacity-50">Tageslimit: {{ daily_target_kg|floatformat:0 }} kg</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                        <small class="text-light opacity-75 d-block">Stundenkapazität</small>
+                        <span class="fs-5 fw-bold text-info">{{ hourly_target_kg|floatformat:0 }} kg/h</span>
+                        <div class="small opacity-50">{{ hourly_target_kg|floatformat:0 }} kg/h × 24h</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                        <small class="text-light opacity-75 d-block">Kapazitätsauslastung</small>
+                        <span class="fs-5 fw-bold {% if utilization_percent > 85 %}text-danger{% elif utilization_percent > 50 %}text-warning{% else %}text-success{% endif %}">
+                            {{ utilization_percent }}%
+                        </span>
+                        <div class="small opacity-50">{{ scheduled_kg|floatformat:0 }} kg bereits belegt</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress mt-3" style="height: 8px; background-color: rgba(255,255,255,0.2); border-radius: 10px;">
+                <div class="progress-bar {% if utilization_percent > 85 %}bg-danger{% elif utilization_percent > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                     role="progressbar" 
+                     style="width: {{ utilization_percent }}%;" 
+                     aria-valuenow="{{ utilization_percent }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hourly Availability Section (Verfügbare Kapazitäten) -->
+    {% if hourly_availability %}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; background: #ffffff;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fs-4">📊</span>
+                    <div>
+                        <h5 class="fw-bold m-0 text-dark">Verfügbare Kapazitäten</h5>
+                        <small class="text-muted">Stündliche Auslastung für den {{ target_date|date:"d.m.Y" }} &bull; Max. {{ factory_settings.palettes_per_hour }} Paletten/h</small>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">🟢 Frei</span>
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 small">🟡 Teilbelegt</span>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 small">🔴 Voll</span>
+                </div>
+            </div>
+
+            <div class="row g-2">
+                {% for slot in hourly_availability %}
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="p-2 border rounded-3 text-center bg-light" style="border-radius: 12px !important;">
+                        <div class="fw-bold small text-dark font-monospace">{{ slot.time }}</div>
+                        <div class="my-1">
+                            <span class="badge bg-{{ slot.badge_class }} rounded-pill px-2 py-1 small fw-bold">
+                                {{ slot.status_label }}
+                            </span>
+                        </div>
+                        <div class="text-muted" style="font-size: 0.75rem;">
+                            {{ slot.used }}/{{ slot.total }} Pal. ({{ slot.remaining_kg|floatformat:0 }} kg frei)
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Order Items Form -->
     <form method="post" id="orderForm">
         {% csrf_token %}
 
+        <!-- Pickup Time Input -->
+        <div class="card border-0 shadow-sm mb-3" style="border-radius: 15px; background: #ffffff;">
+            <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <label class="form-label fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                        <span>🚚</span> Gewünschte Abholzeit (Pickup Time)
+                    </label>
+                    <small class="text-muted d-block">Wählen Sie die geplante Abholzeit zur rückwärtigen Produktionsplanung.</small>
+                </div>
+                <div style="min-width: 160px;">
+                    <input type="time" name="pickup_time" id="pickup_time" class="form-control text-center fw-bold" value="{% if order.pickup_time %}{{ order.pickup_time|time:'H:i' }}{% else %}18:00{% endif %}" style="border-radius: 10px;">
+                </div>
+            </div>
+        </div>
+
         <div class="row g-3">
+
             {% for item in menu_items %}
             <div class="col-12">
                 <div class="card border-0 shadow-sm item-card" id="card_{{ item.id }}" style="border-radius: 15px;">
@@ -24,25 +161,25 @@
                                            id="item_{{ item.id }}">
                                 </div>
                                 <label class="ms-3" for="item_{{ item.id }}" style="cursor: pointer;">
-                                    <div class="fw-bold text-dark">{{ item.name }}</div>
+                                    <div class="fw-bold text-dark fs-6">{{ item.name }}</div>
                                     <div class="text-muted small">
-                                        Typ: {{ item.produkt_type }}
-                                        ({% if item.produkt_type == 'Roh' %}5kg{% else %}4kg{% endif %})
+                                        Typ: <strong>{{ item.produkt_type }}</strong>
+                                        ({% if item.produkt_type == 'Roh' %}5kg pro Beutel{% else %}4kg pro Beutel{% endif %})
                                     </div>
                                 </label>
                             </div>
 
-                            <div style="width: 120px;">
+                            <div style="width: 150px;">
                                 <label class="small text-muted d-block text-center mb-1">Menge (kg)</label>
                                 <input type="number" name="quantity_{{ item.id }}"
                                        id="qty_{{ item.id }}"
-                                       placeholder=" "
+                                       placeholder="0"
                                        inputmode="numeric"
                                        {% if item.produkt_type == 'Roh' %}step="5"{% else %}step="4"{% endif %}
                                        class="form-control text-center quantity-input no-spin"
                                        disabled
                                        style="border-radius: 10px; border: 1px solid #dee2e6; font-weight: bold; opacity: 0.5;">
-                                <div class="text-center mt-1" id="info_{{ item.id }}" style="font-size: 10px; color: #6c757d; min-height: 15px;">
+                                <div class="text-center mt-1" id="info_{{ item.id }}" style="font-size: 11px; color: #6c757d; min-height: 18px;">
                                     <span id="display_{{ item.id }}">0 Beutel</span>
                                 </div>
                             </div>
@@ -54,7 +191,23 @@
             {% endfor %}
         </div>
 
-        <div class="mt-5 mb-4">
+        <!-- Live Order Calculation Summary -->
+        <div class="card border-0 shadow-sm mt-4 bg-light" style="border-radius: 15px;">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small d-block">Gesamtauftrag:</span>
+                        <strong id="summary-total-kg" class="fs-5 text-dark">0 kg</strong>
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted small d-block">Gesamtmenge:</span>
+                        <strong id="summary-total-beutels" class="fs-6 text-primary">0 Beutel</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 mb-4">
             <div class="row g-2">
                 <div class="col-4">
                     <a href="{% url 'customer_orders' %}" class="btn btn-light w-100 py-3 fw-bold shadow-sm" style="border-radius: 12px; color: #6c757d;">
@@ -62,8 +215,8 @@
                     </a>
                 </div>
                 <div class="col-8">
-                    <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm" style="border-radius: 12px;">
-                        ✅ Jetzt bestellen
+                    <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm" style="border-radius: 12px; background: linear-gradient(45deg, #198754, #20c997);">
+                        ✅ Jetzt verbindlich bestellen
                     </button>
                 </div>
             </div>
@@ -73,42 +226,14 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const maxRemainingKg = parseFloat("{{ remaining_capacity_kg|default:30000 }}") || 30000;
         const checkboxes = document.querySelectorAll('.item-select');
 
-        checkboxes.forEach(checkbox => {
-            const id = checkbox.value;
-            const input = document.getElementById('qty_' + id);
-            const displaySpan = document.getElementById('display_' + id);
-            const infoDiv = document.getElementById('info_' + id);
-            const step = parseInt(input.getAttribute('step'));
-
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    input.disabled = false;
-                    input.style.opacity = "1";
-                    input.value = "";
-                    updateCalculation(input, displaySpan, infoDiv, step);
-                } else {
-                    input.disabled = true;
-                    input.value = "";
-                    input.style.opacity = "0.5";
-                    // Paket(e) o'rniga Beutel
-                    displaySpan.innerText = "0 Beutel";
-                    infoDiv.style.color = "#6c757d";
-                    input.style.borderColor = "#dee2e6";
-                }
-            });
-
-            input.addEventListener('input', function() {
-                updateCalculation(this, displaySpan, infoDiv, step);
-            });
-        });
-
         function updateCalculation(input, displaySpan, infoDiv, step) {
-            const val = parseInt(input.value) || 0;
+            if (!input || !displaySpan || !infoDiv) return;
+            const val = parseInt(input.value, 10) || 0;
 
             if (!input.value || val === 0) {
-                // Paket(e) o'rniga Beutel
                 displaySpan.innerText = "0 Beutel";
                 infoDiv.style.color = "#6c757d";
                 input.style.borderColor = "#dee2e6";
@@ -116,36 +241,127 @@
             }
 
             if (val > 0 && val % step === 0) {
-                // Paket(e) o'rniga Beutel
-                displaySpan.innerText = (val / step) + " Beutel";
+                const beutels = Math.floor(val / step);
+                displaySpan.innerText = `${beutels} Beutel`;
                 infoDiv.style.color = "#198754";
                 input.style.borderColor = "#198754";
             } else {
-                displaySpan.innerText = "Ungültige Menge!";
+                displaySpan.innerText = `Muss teilbar durch ${step}kg sein!`;
                 infoDiv.style.color = "#dc3545";
                 input.style.borderColor = "#dc3545";
             }
         }
 
-        document.getElementById('orderForm').addEventListener('submit', function(e) {
-            const checkedItems = document.querySelectorAll('.item-select:checked');
-            if (checkedItems.length === 0) {
-                e.preventDefault();
-                alert("Bitte wählen Sie mindestens ein Produkt aus.");
-                return;
-            }
-            let isValid = true;
-            checkedItems.forEach(cb => {
+        function updateOverallSummary() {
+            let totalKg = 0;
+            let totalBeutels = 0;
+
+            const checkedBoxes = document.querySelectorAll('.item-select:checked');
+            checkedBoxes.forEach(cb => {
                 const input = document.getElementById('qty_' + cb.value);
-                const step = parseInt(input.getAttribute('step'));
-                const val = parseInt(input.value) || 0;
-                if (val <= 0 || val % step !== 0) isValid = false;
+                if (!input) return;
+                const step = parseInt(input.getAttribute('step'), 10) || 5;
+                const val = parseInt(input.value, 10) || 0;
+                if (val > 0) {
+                    totalKg += val;
+                    totalBeutels += Math.floor(val / step);
+                }
             });
-            if (!isValid) {
-                e.preventDefault();
-                alert("Bitte korrigieren Sie die Mengen (muss durch 4 oder 5 teilbar sein).");
+
+            const summaryTotalKgEl = document.getElementById('summary-total-kg');
+            const summaryTotalBeutelsEl = document.getElementById('summary-total-beutels');
+
+            if (summaryTotalKgEl) {
+                summaryTotalKgEl.innerText = `${totalKg.toLocaleString('de-DE')} kg`;
+                if (totalKg > maxRemainingKg && maxRemainingKg > 0) {
+                    summaryTotalKgEl.classList.remove('text-dark');
+                    summaryTotalKgEl.classList.add('text-danger');
+                } else {
+                    summaryTotalKgEl.classList.remove('text-danger');
+                    summaryTotalKgEl.classList.add('text-dark');
+                }
+            }
+
+            if (summaryTotalBeutelsEl) {
+                summaryTotalBeutelsEl.innerText = `${totalBeutels} Beutel`;
+            }
+        }
+
+        checkboxes.forEach(checkbox => {
+            const id = checkbox.value;
+            const input = document.getElementById('qty_' + id);
+            const displaySpan = document.getElementById('display_' + id);
+            const infoDiv = document.getElementById('info_' + id);
+            if (!input) return;
+            const step = parseInt(input.getAttribute('step'), 10) || 5;
+
+            function syncCheckboxState() {
+                if (checkbox.checked) {
+                    input.disabled = false;
+                    input.removeAttribute('disabled');
+                    input.style.opacity = "1";
+                    input.focus();
+                    updateCalculation(input, displaySpan, infoDiv, step);
+                } else {
+                    input.disabled = true;
+                    input.setAttribute('disabled', 'disabled');
+                    input.value = "0";
+                    input.style.opacity = "0.5";
+                    if (displaySpan) displaySpan.innerText = "0 Beutel";
+                    if (infoDiv) infoDiv.style.color = "#6c757d";
+                    input.style.borderColor = "#dee2e6";
+                }
+                updateOverallSummary();
+            }
+
+            checkbox.addEventListener('change', syncCheckboxState);
+
+            input.addEventListener('input', function() {
+                updateCalculation(this, displaySpan, infoDiv, step);
+                updateOverallSummary();
+            });
+
+            // Initial check on load
+            if (checkbox.checked) {
+                input.disabled = false;
+                input.removeAttribute('disabled');
+                input.style.opacity = "1";
+            } else {
+                input.disabled = true;
+                input.setAttribute('disabled', 'disabled');
+                input.style.opacity = "0.5";
             }
         });
+
+        updateOverallSummary();
+
+        const orderForm = document.getElementById('orderForm');
+        if (orderForm) {
+            orderForm.addEventListener('submit', function(e) {
+                const checkedItems = document.querySelectorAll('.item-select:checked');
+                if (checkedItems.length === 0) {
+                    e.preventDefault();
+                    alert("Bitte wählen Sie mindestens ein Produkt aus.");
+                    return;
+                }
+                let isValid = true;
+
+                checkedItems.forEach(cb => {
+                    const input = document.getElementById('qty_' + cb.value);
+                    if (!input) return;
+                    const step = parseInt(input.getAttribute('step'), 10) || 5;
+                    const val = parseInt(input.value, 10) || 0;
+                    if (val <= 0 || val % step !== 0) {
+                        isValid = false;
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                    alert("Bitte korrigieren Sie die Mengen (muss genau durch 4 oder 5 teilbar sein und größer als 0).");
+                }
+            });
+        }
     });
 </script>
 

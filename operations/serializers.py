@@ -9,13 +9,14 @@ class SignupSerializer(serializers.ModelSerializer):
 
     def validate_role(self, value):
         if value not in ['admin', 'worker', 'customer']:
-            raise serializers.ValidationError("Noto‘g‘ri rol")
+            raise serializers.ValidationError("Ungültige Rolle")
         return value
 
     def validate_password(self, value):
         if len(value) < 6:
-            raise serializers.ValidationError("Parol kamida 6 ta belgidan iborat bo‘lishi kerak")
+            raise serializers.ValidationError("Das Passwort muss mindestens 6 Zeichen lang sein")
         return value
+
 
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data['password'])

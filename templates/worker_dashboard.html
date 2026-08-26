@@ -37,11 +37,15 @@
             <h4 class="fw-bold m-0 text-dark">👷 Produktion</h4>
             <p class="text-muted mb-0" style="font-size: 0.8rem;">Produktionsübersicht</p>
         </div>
-        <div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'production_dashboard' %}" class="btn btn-primary btn-sm fw-bold rounded-pill px-3 shadow-sm">
+                🏭 Warteschlange
+            </a>
             <a href="{% url 'shift_history' %}" class="btn btn-white border shadow-sm btn-sm fw-bold rounded-pill px-3 text-dark">
                 📜 Historie
             </a>
         </div>
+
     </div>
 
     {% if messages %}
