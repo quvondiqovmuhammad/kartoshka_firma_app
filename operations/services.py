@@ -99,10 +99,13 @@ def split_order_into_hourly_chunks(
         return []
 
     if target_date is None:
-        if order and order.created_at:
+        if order and getattr(order, 'delivery_date', None):
+            target_date = order.delivery_date
+        elif order and order.created_at:
             target_date = order.created_at.date()
         else:
             target_date = timezone.localtime().date()
+
 
     # Calculate chunk count with safety cap
     num_chunks = int(math.ceil(total_palettes / pal_per_hr))
@@ -199,15 +202,21 @@ def get_production_tasks(
         allowed_dates = {target_date}
 
     if orders is None:
-        orders = Order.objects.filter(
-            status='pending'
-        ).prefetch_related('orderitem_set', 'orderitem_set__menu_item', 'user').order_by('pickup_time', 'created_at')
+        qs = Order.objects.filter(status='pending')
+        if allowed_dates is not None:
+            from django.db.models import Q
+            # Filter orders that are scheduled for the allowed dates (or fallback to created_at if delivery_date is null)
+            qs = qs.filter(
+                Q(delivery_date__in=allowed_dates) | 
+                (Q(delivery_date__isnull=True) & Q(created_at__date__in=allowed_dates))
+            )
+        orders = qs.prefetch_related('orderitem_set', 'orderitem_set__menu_item', 'user').order_by('pickup_time', 'created_at')
 
     all_tasks = []
     for order in orders:
         order_chunks = split_order_into_hourly_chunks(
             order=order,
-            target_date=target_date,
+            target_date=None,  # NEVER override the order's actual delivery_date
             settings=settings
         )
         if allowed_dates is not None:

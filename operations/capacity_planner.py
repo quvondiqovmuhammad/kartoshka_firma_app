@@ -12,7 +12,7 @@ All parameters are loaded dynamically from the singleton FactorySettings model.
 import datetime
 from typing import Dict, Any, Optional
 from django.utils import timezone
-from django.db.models import Sum
+from django.db.models import Sum, Q
 
 
 def get_factory_settings():
@@ -100,12 +100,14 @@ def get_scheduled_production_kg(target_date: datetime.date) -> float:
     from operations.models import OrderItem
 
     scheduled = OrderItem.objects.filter(
-        order__created_at__date=target_date
+        Q(order__delivery_date=target_date) |
+        (Q(order__delivery_date__isnull=True) & Q(order__created_at__date=target_date))
     ).exclude(
         status='cancelled'
     ).aggregate(total_kg=Sum('quantity'))['total_kg']
 
     return float(scheduled or 0.0)
+
 
 
 def get_remaining_daily_capacity_kg(target_date: datetime.date, settings=None) -> float:

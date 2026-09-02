@@ -473,9 +473,55 @@ def delete_menu_item(request, pk):
 
 
 
+def sync_active_orders_with_lager():
+    settings = FactorySettings.get_settings()
+    now = timezone.now()
+    current_time = timezone.localtime(now).time() if timezone.is_aware(now) else now.time()
+    today = timezone.localtime(now).date() if timezone.is_aware(now) else now.date()
+    cutoff = getattr(settings, 'cut_off_time', None) or getattr(settings, 'next_day_cutoff_time', None) or datetime.time(22, 0)
+    
+    if current_time >= cutoff:
+        active_date = today + datetime.timedelta(days=1)
+    else:
+        active_date = today
+
+    pending_items = OrderItem.objects.filter(
+        status='pending',
+        order__delivery_date__lte=active_date
+    ).order_by('order__delivery_date', 'order__created_at')
+
+    with transaction.atomic():
+        for item in pending_items:
+            lager, _ = Lager.objects.get_or_create(menu_item=item.menu_item)
+            if lager.current_stock > 0:
+                stock = lager.current_stock
+                if stock >= item.quantity:
+                    lager.current_stock -= item.quantity
+                    lager.save()
+                    item.status = 'completed'
+                    item.save()
+                    auto_complete_order_if_no_pending(item.order)
+                else:
+                    OrderItem.objects.create(
+                        order=item.order,
+                        menu_item=item.menu_item,
+                        quantity=stock,
+                        status='completed'
+                    )
+                    item.quantity -= stock
+                    item.save()
+                    
+                    lager.current_stock = 0
+                    lager.save()
+
+
 class ProductionDashboardView(RoleRequiredMixin, TemplateView):
     template_name = 'production_dashboard.html'
     allowed_roles = ['worker', 'admin', 'buro']
+
+    def get(self, request, *args, **kwargs):
+        sync_active_orders_with_lager()
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -533,6 +579,17 @@ class WorkerDashboardView(RoleRequiredMixin, TemplateView):
 
         # 2. Barcha mahsulotlar
         products = MenuItem.objects.filter(verfügbar=True).select_related('stock')
+        
+        settings = FactorySettings.get_settings()
+        now = timezone.now()
+        current_time = timezone.localtime(now).time() if timezone.is_aware(now) else now.time()
+        today = timezone.localtime(now).date() if timezone.is_aware(now) else now.date()
+        cutoff = getattr(settings, 'cut_off_time', None) or getattr(settings, 'next_day_cutoff_time', None) or datetime.time(22, 0)
+        
+        if current_time >= cutoff:
+            active_date = today + datetime.timedelta(days=1)
+        else:
+            active_date = today
 
         data = []
         for item in products:
@@ -541,7 +598,8 @@ class WorkerDashboardView(RoleRequiredMixin, TemplateView):
             # ---------------------------------------------------------
             pending_sum = OrderItem.objects.filter(
                 menu_item=item,
-                status='pending'
+                status='pending',
+                order__delivery_date__lte=active_date
             ).aggregate(total=Sum('quantity'))['total'] or 0
 
             # B) Bugungi smenadagi ishlab chiqarish
@@ -608,11 +666,23 @@ def worker_produce(request):
         active_shift.total_packages_done += quantity
         active_shift.save()
 
+        settings = FactorySettings.get_settings()
+        now = timezone.now()
+        current_time = timezone.localtime(now).time() if timezone.is_aware(now) else now.time()
+        today = timezone.localtime(now).date() if timezone.is_aware(now) else now.date()
+        cutoff = getattr(settings, 'cut_off_time', None) or getattr(settings, 'next_day_cutoff_time', None) or datetime.time(22, 0)
+        
+        if current_time >= cutoff:
+            active_date = today + datetime.timedelta(days=1)
+        else:
+            active_date = today
+
         # 2. Qisman yopish mantig'i
         pending_items = OrderItem.objects.filter(
             menu_item=menu_item,
-            status='pending'
-        ).order_by('order__created_at')
+            status='pending',
+            order__delivery_date__lte=active_date
+        ).order_by('order__delivery_date', 'order__created_at')
 
         remaining_produced = quantity
 
@@ -707,17 +777,18 @@ from . import capacity_planner
 
 class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
 
-    def _get_capacity_context(self, settings=None):
+    def _get_capacity_context(self, settings=None, target_date=None):
         if settings is None:
             settings = FactorySettings.get_settings()
-        target_date = capacity_planner.determine_target_production_date(settings=settings)
+        if target_date is None:
+            target_date = capacity_planner.determine_target_production_date(settings=settings)
         hourly_target_kg = capacity_planner.get_hourly_production_target_kg(settings=settings)
         daily_target_kg = capacity_planner.get_daily_production_target_kg(settings=settings)
         scheduled_kg = capacity_planner.get_scheduled_production_kg(target_date)
         remaining_capacity_kg = capacity_planner.get_remaining_daily_capacity_kg(target_date, settings=settings)
         utilization_percent = round((scheduled_kg / daily_target_kg * 100.0), 1) if daily_target_kg > 0 else 0
         cutoff_time = capacity_planner.get_cutoff_time(settings=settings)
-        is_after_cutoff = (timezone.localtime().time() >= cutoff_time)
+        is_after_cutoff = (timezone.localtime().time() >= cutoff_time and target_date == timezone.localtime().date() + datetime.timedelta(days=1))
         hourly_availability = get_hourly_availability(target_date=target_date, settings=settings)
 
         return {
@@ -738,35 +809,76 @@ class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
     def get(self, request, order_id):
         order = get_object_or_404(Order, id=order_id, user=request.user)
         menu_items = MenuItem.objects.filter(verfügbar=True)
+        target_date = getattr(order, 'delivery_date', None) or capacity_planner.determine_target_production_date()
         context = {
             'order': order,
             'menu_items': menu_items,
-            **self._get_capacity_context()
+            **self._get_capacity_context(target_date=target_date)
         }
         return render(request, 'add_items.html', context)
 
     # POST: Miqdorlarni saqlash va hisoblash
     def post(self, request, order_id):
         order = get_object_or_404(Order, id=order_id, user=request.user)
+        settings = FactorySettings.get_settings()
         item_ids = request.POST.getlist('items')
 
-        # Optional pickup time update
+        # 1. Delivery Date validation (between today and today + 30 days)
+        today = timezone.localtime().date()
+        max_delivery_date = today + datetime.timedelta(days=30)
+        delivery_date_str = request.POST.get('delivery_date')
+        selected_delivery_date = None
+
+        if delivery_date_str:
+            try:
+                selected_delivery_date = datetime.datetime.strptime(delivery_date_str.strip(), '%Y-%m-%d').date()
+            except ValueError:
+                messages.error(request, "Ungültiges Datumsformat für das Lieferdatum.")
+                menu_items = MenuItem.objects.filter(verfügbar=True)
+                return render(request, 'add_items.html', {
+                    'order': order,
+                    'menu_items': menu_items,
+                    **self._get_capacity_context(settings=settings)
+                })
+
+            if selected_delivery_date < today or selected_delivery_date > max_delivery_date:
+                messages.error(request, "Das Lieferdatum muss zwischen heute und maximal 30 Tagen in der Zukunft liegen.")
+                menu_items = MenuItem.objects.filter(verfügbar=True)
+                return render(request, 'add_items.html', {
+                    'order': order,
+                    'menu_items': menu_items,
+                    **self._get_capacity_context(settings=settings, target_date=selected_delivery_date)
+                })
+        else:
+            selected_delivery_date = capacity_planner.determine_target_production_date(settings=settings)
+
+        # 2. Pickup time update
         pickup_time_str = request.POST.get('pickup_time')
         if pickup_time_str:
             try:
                 parts = pickup_time_str.strip().split(':')
-                order.pickup_time = datetime.time(int(parts[0]), int(parts[1]))
-                order.save(update_fields=['pickup_time'])
+                selected_pickup_time = datetime.time(int(parts[0]), int(parts[1]))
+                
+                if selected_delivery_date == today and selected_pickup_time < timezone.localtime().time():
+                    messages.error(request, "Die Abholzeit darf für heute nicht in der Vergangenheit liegen.")
+                    menu_items = MenuItem.objects.filter(verfügbar=True)
+                    return render(request, 'add_items.html', {
+                        'order': order,
+                        'menu_items': menu_items,
+                        **self._get_capacity_context(settings=settings, target_date=selected_delivery_date)
+                    })
+                    
+                order.pickup_time = selected_pickup_time
             except (ValueError, IndexError):
                 pass
 
+        order.delivery_date = selected_delivery_date
 
         if not item_ids:
             order.delete()
             messages.error(request, "Bitte wählen Sie mindestens ein Produkt aus.")
             return redirect('customer_dashboard')
 
-        settings = FactorySettings.get_settings()
         parsed_items = []
         total_production_needed_kg = 0
 
@@ -799,9 +911,13 @@ class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
             messages.error(request, "Bitte wählen Sie mindestens ein Produkt mit einer gültigen Menge aus.")
             return redirect('customer_dashboard')
 
-        # ✅ KAPAZITÄTSPRÜFUNG DURCHFÜHREN
+        # ✅ KAPAZITÄTSPRÜFUNG DURCHFÜHREN (spezifisches Lieferdatum)
         if total_production_needed_kg > 0:
-            capacity_check = capacity_planner.check_order_capacity(total_production_needed_kg, settings=settings)
+            capacity_check = capacity_planner.check_order_capacity(
+                total_production_needed_kg,
+                target_date=selected_delivery_date,
+                settings=settings
+            )
             if not capacity_check['is_feasible']:
                 messages.error(request, f"⚠️ {capacity_check['message']}")
                 menu_items = MenuItem.objects.filter(verfügbar=True)
@@ -809,20 +925,35 @@ class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
                     'order': order,
                     'menu_items': menu_items,
                     'capacity_error': capacity_check,
-                    **self._get_capacity_context(settings)
+                    **self._get_capacity_context(settings, target_date=selected_delivery_date)
                 }
                 return render(request, 'add_items.html', context)
 
         # ✅ AUSFÜHRUNG & BESTELLUNG SPEICHERN
+        now = timezone.now()
+        current_time = timezone.localtime(now).time() if timezone.is_aware(now) else now.time()
+        cutoff = getattr(settings, 'cut_off_time', None) or getattr(settings, 'next_day_cutoff_time', None) or datetime.time(22, 0)
+        
+        if current_time >= cutoff:
+            active_date = today + datetime.timedelta(days=1)
+        else:
+            active_date = today
+
         with transaction.atomic():
+            order.save()
             has_items = False
             for item in parsed_items:
                 menu_item = item['menu_item']
                 quantity = item['quantity']
                 lager = item['lager']
 
-                if lager.current_stock >= quantity:
-                    # Omborda yetarli
+                if selected_delivery_date > active_date:
+                    OrderItem.objects.create(
+                        order=order, menu_item=menu_item,
+                        quantity=quantity, status='pending'
+                    )
+                elif lager.current_stock >= quantity:
+                    # Im Lager vorhanden
                     lager.current_stock -= quantity
                     lager.save()
                     OrderItem.objects.create(
@@ -830,7 +961,7 @@ class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
                         quantity=quantity, status='completed'
                     )
                 elif lager.current_stock > 0:
-                    # Omborda bir qismi bor
+                    # Teilweise im Lager
                     stock_qty = lager.current_stock
                     production_qty = quantity - stock_qty
                     lager.current_stock = 0
@@ -845,14 +976,14 @@ class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
                         quantity=production_qty, status='pending'
                     )
                 else:
-                    # Omborda yo'q
+                    # Nicht im Lager
                     OrderItem.objects.create(
                         order=order, menu_item=menu_item,
                         quantity=quantity, status='pending'
                     )
                 has_items = True
 
-            # Buyurtma holatini yangilash
+            # Bestellstatus aktualisieren
             if has_items:
                 if not order.orderitem_set.filter(status='pending').exists():
                     order.status = 'completed'
@@ -864,6 +995,7 @@ class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
             else:
                 order.delete()
                 return redirect('customer_dashboard')
+
 
 
 class CustomerOrdersView(BuroWorkingHoursMixin, LoginRequiredMixin, View):

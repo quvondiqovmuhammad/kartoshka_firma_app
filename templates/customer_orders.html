@@ -21,7 +21,10 @@
                                 <span class="text-primary fw-bold" style="font-size: 11px;">#{{ order.id }}</span>
                                 <span class="dot {% if order.status == 'completed' %}bg-success{% elif order.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}"></span>
                             </div>
-                            <div class="text-muted" style="font-size: 9px;">{{ order.created_at|date:"d.m.Y" }}</div>
+                            <div class="text-muted lh-sm" style="font-size: 10px;">
+                                <i class="bi bi-calendar3"></i> {{ order.delivery_date|date:"d.m.Y" }}<br>
+                                <i class="bi bi-clock"></i> {{ order.pickup_time|time:"H:i" }}
+                            </div>
 
                             {% if request.user.role == 'admin' or request.user.role == 'buro' %}
                                 <div class="fw-bold text-dark mt-1" style="font-size: 10px;">{{ order.user.username }}</div>

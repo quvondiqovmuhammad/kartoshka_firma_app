@@ -50,7 +50,10 @@ class Order(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     pickup_time = models.TimeField(default=datetime.time(18, 0), null=True, blank=True, verbose_name="Abholzeit / Pickup Time")
+    delivery_date = models.DateField(default=timezone.now, verbose_name="Yetkazib berish sanasi")
     created_at = models.DateTimeField(auto_now_add=True)
+
+
 
     def __str__(self):
         return f"Order {self.id} by {self.user.username}"
