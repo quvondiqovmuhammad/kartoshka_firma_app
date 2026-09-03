@@ -5,9 +5,14 @@
 <div class="container pb-5 px-2">
     <div class="d-flex justify-content-between align-items-center mb-4 mt-2 px-1">
         <h2 class="fw-bold m-0" style="font-size: 1.3rem;">📋 Bestellungen</h2>
-        <a href="{% url 'customer_dashboard' %}" class="btn btn-success btn-sm shadow-sm" style="border-radius: 10px; padding: 8px 12px;">
-            <span class="fw-bold">+ Neu</span>
-        </a>
+        <div>
+            <a href="{% url 'customer_future_orders' %}" class="btn btn-outline-primary btn-sm ms-2 shadow-sm" style="border-radius: 10px; padding: 8px 12px;">
+                📅 Zukünftige Bestellungen
+            </a>
+            <a href="{% url 'customer_dashboard' %}" class="btn btn-success btn-sm shadow-sm ms-1" style="border-radius: 10px; padding: 8px 12px;">
+                <span class="fw-bold">+ Neu</span>
+            </a>
+        </div>
     </div>
 
     {% if orders %}

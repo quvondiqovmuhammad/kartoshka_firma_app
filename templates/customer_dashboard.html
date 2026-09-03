@@ -77,7 +77,8 @@
     </div>
     {% endif %}
 
-    <div class="sticky-bottom-btn mt-5">
+
+    <div class="sticky-bottom-btn mt-3">
         <form method="post" action="{% url 'create_order' %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-primary btn-lg w-100 shadow-lg py-3 d-flex align-items-center justify-content-center gap-2" style="border-radius: 18px; font-weight: 700;">

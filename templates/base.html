@@ -92,6 +92,13 @@
     </nav>
 
     <div class="container main-content">
+        {% if user.is_authenticated and user.role == 'admin' and request.resolver_match.url_name != 'admin_dashboard' %}
+            <div class="mb-3 text-center">
+                <a href="{% url 'admin_dashboard' %}" class="badge bg-dark text-decoration-none p-2 shadow-sm fs-6">
+                    🛡️ Admin-Modus: Zurück zum Admin-Panel
+                </a>
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </div>
 

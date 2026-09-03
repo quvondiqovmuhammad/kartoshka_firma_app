@@ -255,6 +255,10 @@ class RoleRequiredMixin(LoginRequiredMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('login_html')
+            
+        if request.user.is_superuser or request.user.role == 'admin':
+            return super().dispatch(request, *args, **kwargs)
+            
         if request.user.role not in self.allowed_roles:
             return redirect('home')
         return super().dispatch(request, *args, **kwargs)
@@ -1123,3 +1127,109 @@ def asset_links(request):
         }
     }]
     return JsonResponse(data, safe=False)
+
+
+class AdminFutureOrdersSummaryView(RoleRequiredMixin, TemplateView):
+    template_name = 'admin_future_orders.html'
+    allowed_roles = ['admin']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        settings = FactorySettings.get_settings()
+        now = timezone.now()
+        current_time = timezone.localtime(now).time() if timezone.is_aware(now) else now.time()
+        today = timezone.localtime(now).date() if timezone.is_aware(now) else now.date()
+        cutoff = getattr(settings, 'cut_off_time', None) or getattr(settings, 'next_day_cutoff_time', None) or datetime.time(22, 0)
+        
+        if current_time >= cutoff:
+            active_date = today + datetime.timedelta(days=1)
+        else:
+            active_date = today
+
+        future_summary = OrderItem.objects.filter(
+            status='pending',
+            order__delivery_date__gt=active_date
+        ).values('order__delivery_date').annotate(
+            total_orders=Count('order', distinct=True),
+            total_weight=Sum('quantity')
+        ).order_by('order__delivery_date')
+
+        context['future_summary'] = future_summary
+        return context
+
+
+class CustomerFutureOrdersSummaryView(BuroWorkingHoursMixin, RoleRequiredMixin, TemplateView):
+    template_name = 'customer_future_orders.html'
+    allowed_roles = ['customer', 'admin', 'buro']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        settings = FactorySettings.get_settings()
+        now = timezone.now()
+        current_time = timezone.localtime(now).time() if timezone.is_aware(now) else now.time()
+        today = timezone.localtime(now).date() if timezone.is_aware(now) else now.date()
+        cutoff = getattr(settings, 'cut_off_time', None) or getattr(settings, 'next_day_cutoff_time', None) or datetime.time(22, 0)
+        
+        if current_time >= cutoff:
+            active_date = today + datetime.timedelta(days=1)
+        else:
+            active_date = today
+
+        future_summary = OrderItem.objects.filter(
+            status='pending',
+            order__delivery_date__gt=active_date,
+            order__user=self.request.user
+        ).values('order__delivery_date').annotate(
+            total_orders=Count('order', distinct=True),
+            total_weight=Sum('quantity')
+        ).order_by('order__delivery_date')
+
+        context['future_summary'] = future_summary
+        return context
+
+
+class AdminFutureOrdersDetailView(RoleRequiredMixin, TemplateView):
+    template_name = 'admin_future_orders_detail.html'
+    allowed_roles = ['admin']
+
+    def get_context_data(self, date_str, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            parsed_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            parsed_date = None
+        
+        if parsed_date:
+            orders = Order.objects.filter(delivery_date=parsed_date).order_by('pickup_time')
+        else:
+            orders = Order.objects.none()
+
+        context['orders'] = orders
+        context['target_date'] = parsed_date
+        context['date_str'] = date_str
+        return context
+
+
+class CustomerFutureOrdersDetailView(BuroWorkingHoursMixin, RoleRequiredMixin, TemplateView):
+    template_name = 'customer_future_orders_detail.html'
+    allowed_roles = ['customer', 'admin', 'buro']
+
+    def get_context_data(self, date_str, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            parsed_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            parsed_date = None
+        
+        if parsed_date:
+            orders = Order.objects.filter(
+                delivery_date=parsed_date, 
+                user=self.request.user
+            ).order_by('pickup_time')
+        else:
+            orders = Order.objects.none()
+
+        context['orders'] = orders
+        context['target_date'] = parsed_date
+        context['date_str'] = date_str
+        return context

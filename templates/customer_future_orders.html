@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Zukünftige Bestellungen | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="container mt-4 pb-5">
+
+    <div class="mb-4">
+        <a href="{% url 'customer_orders' %}" class="text-decoration-none text-muted d-flex align-items-center gap-2" style="font-size: 1.1rem; font-weight: 500;">
+            <span style="font-size: 1.2rem;">⬅️</span> Zurück zu Bestellungen
+        </a>
+    </div>
+
+    <div class="d-flex align-items-center mb-4 ps-1">
+        <div class="bg-warning bg-opacity-10 rounded-4 d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+            <span style="font-size: 35px;">📅</span>
+        </div>
+        <div>
+            <h3 class="fw-bold m-0 text-dark">Zukünftige Bestellungen</h3>
+            <p class="text-muted small m-0">Ihre geplanten Bestellungen</p>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {% for summary in future_summary %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <a href="{% url 'customer_future_orders_detail' summary.order__delivery_date|date:'Y-m-d' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm" style="border-radius: 15px; transition: transform 0.2s;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4 class="fw-bold text-dark m-0">{{ summary.order__delivery_date|date:"d.m.Y" }}</h4>
+                            <span class="badge bg-primary fs-6">{{ summary.total_orders }} Bestellung{{ summary.total_orders|pluralize:"en" }}</span>
+                        </div>
+                        <div class="d-flex align-items-center mt-3">
+                            <div class="bg-light rounded p-2 flex-grow-1 text-center">
+                                <small class="text-muted d-block">Gesamtgewicht</small>
+                                <span class="fs-4 fw-bold text-dark">{{ summary.total_weight|floatformat:0 }} kg</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="display-1 opacity-25">🗓️</div>
+            <p class="text-muted mt-3">Keine zukünftigen Bestellungen vorhanden.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

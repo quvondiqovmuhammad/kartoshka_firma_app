@@ -96,6 +96,30 @@
                 </div>
             </a>
         </div>
+        
+        <div class="col-12">
+            <a href="{% url 'admin_future_orders' %}" class="btn btn-warning w-100 p-3 shadow-sm text-start position-relative overflow-hidden border-0 h-100 text-dark" style="border-radius: 20px; background: linear-gradient(45deg, #ffc107, #ffca2c);">
+                <div class="d-flex align-items-center">
+                    <span class="fs-1 me-3">📅</span>
+                    <div>
+                        <h5 class="fw-bold m-0 text-dark">Zukünftige Bestellungen</h5>
+                        <small class="text-dark opacity-75">Übersicht der kommenden Tage</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-12 mt-4">
+            <h6 class="text-muted fw-bold mb-3">🛠️ Master-Ansichten</h6>
+            <div class="d-flex gap-2">
+                <a href="{% url 'customer_dashboard' %}" class="btn btn-outline-info w-50 py-2 shadow-sm" style="border-radius: 12px; font-weight: 500;">
+                    Büro Ansicht (Kunde)
+                </a>
+                <a href="{% url 'worker_dashboard' %}" class="btn btn-outline-warning w-50 py-2 shadow-sm" style="border-radius: 12px; font-weight: 500;">
+                    Produktion (Arbeiter)
+                </a>
+            </div>
+        </div>
     </div>
 
 

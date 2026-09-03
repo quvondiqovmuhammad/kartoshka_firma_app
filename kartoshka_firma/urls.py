@@ -12,7 +12,8 @@ from operations.views import (
     MenuCreateView, MenuUpdateView,
     WorkerDashboardView, ProductionDashboardView, start_shift, end_shift, shift_history_view, worker_produce,
     CustomerDashboardView, CustomerOrdersView, CreateOrderHTMLView, AddItemsToOrderView, cancel_order_item,
-    asset_links, delete_menu_item
+    asset_links, delete_menu_item, AdminFutureOrdersSummaryView, CustomerFutureOrdersSummaryView,
+    AdminFutureOrdersDetailView, CustomerFutureOrdersDetailView
 )
 
 urlpatterns = [
@@ -33,6 +34,8 @@ urlpatterns = [
     path('dashboard/admin/settings/', FactorySettingsUpdateView.as_view(), name='admin_factory_settings'),
     path('dashboard/admin/users/', AllUsersView.as_view(), name='admin_users'),
     path('dashboard/admin/orders/', AdminOrderListView.as_view(), name='admin_orders'),
+    path('dashboard/admin/future-orders/', AdminFutureOrdersSummaryView.as_view(), name='admin_future_orders'),
+    path('dashboard/admin/future-orders/<str:date_str>/', AdminFutureOrdersDetailView.as_view(), name='admin_future_orders_detail'),
 
     # User boshqaruvi
     path('dashboard/admin/approve/<int:user_id>/', approve_user, name='approve_user'),
@@ -62,6 +65,8 @@ urlpatterns = [
     # --- CUSTOMER (MIJOZ) ---
     path('dashboard/customer/', CustomerDashboardView.as_view(), name='customer_dashboard'),
     path('dashboard/customer/orders/', CustomerOrdersView.as_view(), name='customer_orders'),
+    path('dashboard/customer/future-orders/', CustomerFutureOrdersSummaryView.as_view(), name='customer_future_orders'),
+    path('dashboard/customer/future-orders/<str:date_str>/', CustomerFutureOrdersDetailView.as_view(), name='customer_future_orders_detail'),
     path('order/create/', CreateOrderHTMLView.as_view(), name='create_order'),
     path('order/<int:order_id>/add-items/', AddItemsToOrderView.as_view(), name='add_items_to_order'),
     path('cancel-item/<int:item_id>/', cancel_order_item, name='cancel_order_item'),

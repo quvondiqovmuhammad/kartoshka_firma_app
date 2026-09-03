@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Bestellungen für den {{ date_str }} | Kartoffelfirma{% endblock %}
+
+{% block content %}
+<div class="container pb-5 px-2">
+    <div class="mb-3 mt-2 px-1">
+        <a href="{% url 'customer_future_orders' %}" class="text-decoration-none text-muted d-flex align-items-center gap-2" style="font-size: 1rem; font-weight: 500;">
+            <span style="font-size: 1.1rem;">⬅️</span> Zurück zur Übersicht
+        </a>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2 px-1">
+        <h2 class="fw-bold m-0" style="font-size: 1.3rem;">📋 Bestellungen für {{ target_date|date:"d.m.Y" }}</h2>
+    </div>
+
+    {% if orders %}
+        <div class="row row-cols-2 g-2">
+            {% for order in orders %}
+                {% if order.orderitem_set.exists %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm order-grid-card">
+                        <div class="card-header bg-white border-0 pt-3 pb-0 px-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-primary fw-bold" style="font-size: 11px;">#{{ order.id }}</span>
+                                <span class="dot {% if order.status == 'completed' %}bg-success{% elif order.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}"></span>
+                            </div>
+                            <div class="text-muted lh-sm" style="font-size: 10px;">
+                                <div class="mb-1">
+                                    <i class="bi bi-cart"></i> Bestellt: {{ order.created_at|date:"d.m.Y H:i" }}
+                                </div>
+                                <div>
+                                    <i class="bi bi-truck"></i> Abholung: {{ order.delivery_date|date:"d.m.Y" }} {{ order.pickup_time|time:"H:i" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-body px-2 py-2">
+                            <div class="order-items-scroll">
+                                {% for item in order.orderitem_set.all %}
+                                <div class="item-box mb-2 p-1 rounded bg-light border-start border-3
+                                    {% if item.status == 'completed' %}border-success{% elif item.status == 'pending' %}border-warning{% else %}border-danger{% endif %}">
+
+                                    <div class="fw-bold text-dark truncate-text" style="font-size: 11px;">
+                                        {{ item.menu_item.name }}
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <span class="badge bg-white text-dark border p-1" style="font-size: 10px;">
+                                            {{ item.quantity }} kg
+                                        </span>
+
+                                        {% if item.status == 'pending' %}
+                                        <form method="post" action="{% url 'cancel_order_item' item.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-cancel-custom" style="padding: 2px 6px; font-size: 0.9rem;" onclick="return confirm('Möchten Sie das stornieren?')">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div class="display-1 opacity-25">🛍️</div>
+            <p class="text-muted">Keine Bestellungen.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .order-grid-card { border-radius: 15px !important; transition: transform 0.2s; }
+    .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; }
+    .item-box { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .btn-cancel-custom {
+        background-color: transparent;
+        border: none;
+        color: #dc3545;
+        transition: transform 0.2s;
+    }
+    .btn-cancel-custom:active {
+        transform: scale(0.9);
+    }
+</style>
+{% endblock %}
