@@ -488,7 +488,7 @@ def sync_active_orders_with_lager():
     pending_items = OrderItem.objects.filter(
         status='pending',
         order__delivery_date__lte=active_date
-    ).order_by('order__delivery_date', 'order__created_at')
+    ).order_by('order__pickup_time')
 
     with transaction.atomic():
         for item in pending_items:
@@ -569,6 +569,9 @@ class WorkerDashboardView(RoleRequiredMixin, TemplateView):
     template_name = 'worker_dashboard.html'
     allowed_roles = ['worker', 'admin', 'buro']
 
+    def get(self, request, *args, **kwargs):
+        sync_active_orders_with_lager()
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -910,6 +913,43 @@ class AddItemsToOrderView(BuroWorkingHoursMixin, LoginRequiredMixin, View):
             order.delete()
             messages.error(request, "Bitte wählen Sie mindestens ein Produkt mit einer gültigen Menge aus.")
             return redirect('customer_dashboard')
+
+        # ✅ STÜNDLICHE KAPAZITÄTSPRÜFUNG
+        newly_requested_kg = total_production_needed_kg
+        if newly_requested_kg > 0 and getattr(order, 'pickup_time', None):
+            max_capacity_per_hour_kg = settings.palettes_per_hour * settings.kg_per_palette
+            
+            # ✅ DYNAMIC LEAD TIME VALIDATION
+            capacity_per_minute = max_capacity_per_hour_kg / 60.0
+            required_minutes = newly_requested_kg / capacity_per_minute
+            pickup_datetime = timezone.make_aware(datetime.datetime.combine(selected_delivery_date, order.pickup_time))
+            available_minutes = (pickup_datetime - timezone.now()).total_seconds() / 60.0
+            
+            if available_minutes < required_minutes:
+                messages.error(request, f"Die Produktionszeit für diese Menge beträgt ca. {int(required_minutes)} Minuten. Bitte wählen Sie eine spätere Abholzeit.")
+                menu_items = MenuItem.objects.filter(verfügbar=True)
+                return render(request, 'add_items.html', {
+                    'order': order,
+                    'menu_items': menu_items,
+                    **self._get_capacity_context(settings=settings, target_date=selected_delivery_date)
+                })
+
+            pickup_hour = order.pickup_time.hour
+            
+            existing_booked_kg = OrderItem.objects.filter(
+                status='pending',
+                order__delivery_date=selected_delivery_date,
+                order__pickup_time__hour=pickup_hour
+            ).aggregate(total=Sum('quantity'))['total'] or 0
+            
+            if (existing_booked_kg + newly_requested_kg) > max_capacity_per_hour_kg:
+                messages.error(request, "Für diese Uhrzeit ist am gewählten Datum die maximale Kapazität erreicht. Bitte wählen Sie eine andere Zeit.")
+                menu_items = MenuItem.objects.filter(verfügbar=True)
+                return render(request, 'add_items.html', {
+                    'order': order,
+                    'menu_items': menu_items,
+                    **self._get_capacity_context(settings=settings, target_date=selected_delivery_date)
+                })
 
         # ✅ KAPAZITÄTSPRÜFUNG DURCHFÜHREN (spezifisches Lieferdatum)
         if total_production_needed_kg > 0:
