@@ -1199,12 +1199,38 @@ class AdminFutureOrdersDetailView(RoleRequiredMixin, TemplateView):
         except ValueError:
             parsed_date = None
         
-        if parsed_date:
-            orders = Order.objects.filter(delivery_date=parsed_date).order_by('pickup_time')
-        else:
-            orders = Order.objects.none()
+        intervals = [
+            ("00:00 - 10:00", datetime.time(0, 0), datetime.time(10, 0)),
+            ("10:00 - 12:30", datetime.time(10, 0), datetime.time(12, 30)),
+            ("12:30 - 14:00", datetime.time(12, 30), datetime.time(14, 0)),
+            ("14:00 - 20:00", datetime.time(14, 0), datetime.time(20, 0)),
+            ("20:00 - 22:00", datetime.time(20, 0), datetime.time(22, 0)),
+            ("22:00 - 23:59", datetime.time(22, 0), datetime.time(23, 59, 59)),
+        ]
 
-        context['orders'] = orders
+        grouped_orders = []
+
+        if parsed_date:
+            all_orders = Order.objects.filter(delivery_date=parsed_date).prefetch_related('orderitem_set', 'orderitem_set__menu_item').order_by('pickup_time')
+            
+            for name, start_time, end_time in intervals:
+                bucket_orders = []
+                totals = {}
+                for order in all_orders:
+                    if order.pickup_time and start_time <= order.pickup_time <= end_time:
+                        bucket_orders.append(order)
+                        for item in order.orderitem_set.all():
+                            prod_name = item.menu_item.name
+                            totals[prod_name] = totals.get(prod_name, 0) + item.quantity
+                
+                if bucket_orders:
+                    grouped_orders.append({
+                        'interval': name,
+                        'totals': totals,
+                        'orders': bucket_orders,
+                    })
+
+        context['grouped_orders'] = grouped_orders
         context['target_date'] = parsed_date
         context['date_str'] = date_str
         return context

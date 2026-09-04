@@ -1,7 +1,7 @@
 """
 Capacity Planner Module (operations/capacity_planner.py)
 --------------------------------------------------------
-Dynamic production capacity planning and scheduling logic for Kartoffelfirma.
+Dynamic production capacity planning and scheduling logic for Kartoffel Koppold.
 
 The baseline factory capacity is configured in palettes per hour and weight per palette:
 - hourly_production_target_kg = palettes_per_hour * kg_per_palette

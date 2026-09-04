@@ -20,79 +20,30 @@
         </div>
     </div>
 
-    <div class="masonry-grid">
-        {% for order in orders %}
-        <div class="masonry-item">
-            <div class="card border-0 shadow-sm position-relative overflow-hidden mb-4" style="border-radius: 20px;">
-
-                <div class="position-absolute top-0 start-0 bottom-0" style="width: 6px;
-                    background-color: {% if order.status == 'completed' %}#198754{% elif order.status == 'pending' %}#ffc107{% else %}#dc3545{% endif %};">
+    <div class="intervals-container">
+        {% for block in grouped_orders %}
+            {% if block.totals %}
+            <div class="card mb-4 shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-clock me-2 text-warning"></i> Zeitfenster: {{ block.interval }}</h5>
                 </div>
-
-                <div class="card-body ps-4">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="badge bg-light text-dark border fw-bold">#{{ order.id }}</span>
-                        <div class="text-end text-muted lh-sm" style="font-size: 11px;">
-                            <div class="mb-1">
-                                <i class="bi bi-cart"></i> Bestellt: {{ order.created_at|date:"d.m.Y H:i" }}
-                            </div>
-                            <div>
-                                <i class="bi bi-truck"></i> Abholung: {{ order.delivery_date|date:"d.m.Y" }} {{ order.pickup_time|time:"H:i" }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <h5 class="fw-bold text-dark mb-1">
-                        {{ order.user.first_name }} {{ order.user.last_name }}
-                    </h5>
-                    <p class="text-muted small mb-3">👤 Kunde: {{ order.user.username }}</p>
-
-                    <div class="mb-3">
-                        {% if order.status == 'completed' %}
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">✅ Erledigt</span>
-                        {% elif order.status == 'pending' %}
-                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3">⏳ Wartend</span>
-                        {% else %}
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3">❌ Storniert</span>
-                        {% endif %}
-                    </div>
-
-                    <button class="btn btn-light w-100 fw-bold text-primary rounded-3 py-2 border-0"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#details-{{ order.id }}">
-                        🔽 Details anzeigen
-                    </button>
-
-                    <div class="collapse mt-2" id="details-{{ order.id }}">
-                        <div class="pt-2">
-                            <ul class="list-group list-group-flush">
-                                {% for item in order.orderitem_set.all %}
-                                <li class="list-group-item px-0 py-2 border-bottom-0 d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
-                                        {% if item.menu_item.produkt_type == 'Roh' %}
-                                            <span class="me-2">🥔</span>
-                                        {% else %}
-                                            <span class="me-2">🍟</span>
-                                        {% endif %}
-                                        <span class="small fw-bold text-dark">{{ item.menu_item.name }}</span>
-                                    </div>
-                                    <span class="badge bg-secondary">{{ item.quantity|floatformat:0 }} kg</span>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for product_name, total_kg in block.totals.items %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-4">
+                            <span class="fw-bold fs-5 text-dark">{{ product_name }}</span>
+                            <span class="badge bg-primary rounded-pill fs-5 px-3 py-2">{{ total_kg|floatformat:0 }} kg</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
-        </div>
+            {% endif %}
         {% empty %}
-        <div class="text-center py-5 w-100">
-            <h4 class="text-muted">Keine Bestellungen vorhanden.</h4>
-        </div>
+            <div class="text-center py-5 w-100">
+                <h4 class="text-muted">Keine Bestellungen vorhanden.</h4>
+            </div>
         {% endfor %}
-
     </div>
 </div>
 
